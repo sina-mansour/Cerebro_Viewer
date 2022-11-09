@@ -1,0 +1,14 @@
+# ipython
+.ipynb_checkpoints/
+
+# pycache
+code/__pycache__
+
+# packaging
+build/
+dist/
+*.egg-info/
+
+# sublime workspace and project
+cerebro-viewer.sublime-workspace
+cerebro-viewer.sublime-project
