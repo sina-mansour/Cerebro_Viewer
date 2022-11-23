@@ -86,7 +86,7 @@ class Renderer_panda3d(Renderer):
 
     def __init__(self, **kwargs):
         # import ipygany engine only when the renderer class is instantiated
-        from cerebro_window import Cerebro_window
+        from .cerebro_window import Cerebro_window
 
         # view angle can be provided to renderer
         self.window = Cerebro_window(**kwargs)

@@ -20,9 +20,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 import nibabel as nib
 
-import renderer
-import cerebro_utils as utils
-import cerebro_brain_utils as cbu
+from . import renderer
+from . import cerebro_utils as utils
+from . import cerebro_brain_utils as cbu
 
 
 class Cerebro_brain_viewer():

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "Cerebro_Viewer"
-version = "0.0.1"
+version = "0.0.3"
 authors = [
   { name="Sina Mansour L.", email="sina.mansour.lakouraj@gmail.com" },
 ]
@@ -17,7 +17,14 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
 ]
-dependencies = []
+dependencies = [
+    'matplotlib',
+    'numpy',
+    'scipy',
+    'nibabel',
+    'trimesh',
+    'Panda3D',
+]
 
 [project.urls]
 "Homepage" = "https://github.com/sina-mansour/Cerebro_Viewer"

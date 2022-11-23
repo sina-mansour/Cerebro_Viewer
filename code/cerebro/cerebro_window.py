@@ -21,7 +21,7 @@ from panda3d.core import GeomVertexData, GeomTriangles, GeomEnums, GeomNode
 from panda3d.core import RenderState, TransparencyAttrib, NodePath
 from panda3d.core import load_prc_file_data
 
-import cerebro_utils as utils
+from . import cerebro_utils as utils
 
 
 # configurations
