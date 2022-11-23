@@ -2,6 +2,7 @@
 .ipynb_checkpoints/
 
 # pycache
+code/cerebro/__pycache__
 code/__pycache__
 
 # packaging
