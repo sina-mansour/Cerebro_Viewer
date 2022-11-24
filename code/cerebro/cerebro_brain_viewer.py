@@ -377,6 +377,9 @@ class Cerebro_brain_viewer():
             self.center_coordinate = new_center_coordinate
             self.change_view((None, new_center_coordinate, None, None))
 
+        # signal that render was updated
+        self.created_objects[object_id]['render_update_required'] = False
+
     def render_object(self, object_id):
         if self.created_objects[object_id]['object_type'] == 'surface_mesh':
             self.render_surface_mesh(object_id)

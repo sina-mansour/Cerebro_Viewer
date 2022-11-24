@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "Cerebro_Viewer"
-version = "0.0.3"
+version = "0.0.4"
 authors = [
   { name="Sina Mansour L.", email="sina.mansour.lakouraj@gmail.com" },
 ]
@@ -18,8 +18,8 @@ classifiers = [
     "Operating System :: OS Independent",
 ]
 dependencies = [
+    'numpy>=1.19',
     'matplotlib',
-    'numpy',
     'scipy',
     'nibabel',
     'trimesh',
@@ -32,5 +32,11 @@ dependencies = [
 
 [project.optional-dependencies]
 
+[tool.setuptools]
+include-package-data = true
+
 [tool.setuptools.packages.find]
 where = ["code"]
+
+[tool.setuptools.package-data]
+data = ["**"]
