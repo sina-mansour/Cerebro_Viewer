@@ -489,7 +489,7 @@ class Cerebro_window(ShowBase):
     # Create template objects for instancing
     def create_object_templates(self):
         self.template_sphere_object = self.create_sphere_mesh(node_name='template_sphere', visualize=False, transparent=False, reorder_faces=False)
-        self.template_cylinder_object = self.create_cylinder_mesh(node_name='template_sphere', visualize=False, transparent=False, reorder_faces=False)
+        self.template_cylinder_object = self.create_cylinder_mesh(node_name='template_cylinder', visualize=False, transparent=False, reorder_faces=False)
 
     # Define a function to create a sphere
     def create_sphere_mesh(self, node_name='sphere', **kwargs):
@@ -598,10 +598,11 @@ class Cerebro_window(ShowBase):
         else:
             raise Exception(f'Clearing is not implemented for "{node_type}" nodes.')
 
+        self.created_objects.pop(node_name)
+
     # Define a function to clear created objects (not templates)
     def clear_all_created_objects(self):
         for node_name in list(self.created_objects):
             if 'template' not in node_name:
                 self.clear_created_object(node_name)
-                self.created_objects.pop(node_name)
         utils.garbage_collect()
