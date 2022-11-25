@@ -81,6 +81,11 @@ class Cerebro_window(ShowBase):
 
         self.create_object_templates()
 
+    # Draw without running
+    def draw(self):
+        self.taskMgr.step()
+        self.taskMgr.step()
+
     # Keyboard and mouse setup procedure
     def setup_keyboard_and_mouse(self):
         self.key_map = {

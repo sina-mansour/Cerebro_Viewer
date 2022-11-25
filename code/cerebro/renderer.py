@@ -129,6 +129,12 @@ class Renderer_panda3d(Renderer):
         """
         self.window.run()
 
+    def draw(self):
+        """
+        A method to update the display without starting the show loop.
+        """
+        self.window.draw()
+
     def clear_all(self):
         """
         A method to clear all rendered objects.
