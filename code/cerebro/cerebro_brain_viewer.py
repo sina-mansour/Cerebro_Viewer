@@ -63,6 +63,9 @@ class Cerebro_brain_viewer():
         # Create a dictionary for loaded files
         self.loaded_files = {}
 
+        # Create a dictionary for loaded default objects
+        self.default_objects = {}
+
     # Camera view configuration
     def view_to_camera_config(self, view):
         camera_target = (0, 0, 0)
@@ -120,8 +123,15 @@ class Cerebro_brain_viewer():
         }
         self.created_objects[object_id] = created_object
 
+        # set as default surface model
+        self.default_objects[object_type] = object_id
+
         # return object to user
         return created_object
+
+    def load_template_GIFTI_cortical_surface_models(self, template_surface='inflated'):
+        left_surface_file, right_surface_file = cbu.get_left_and_right_GIFTI_template_surface(template_surface)
+        return self.load_GIFTI_cortical_surface_models(left_surface_file, right_surface_file)
 
     def load_file(self, file_name, load_func, use_cache=True):
         if use_cache and (file_name in self.loaded_files):
@@ -146,7 +156,14 @@ class Cerebro_brain_viewer():
             **kwargs
         }
 
-    def visualize_CIFTI_space(self, cortical_surface_model_id, cifti_template_file=None):
+    def visualize_cifti_space(self, cortical_surface_model_id=None, cifti_template_file=None):
+        # initialization
+        if cortical_surface_model_id is None:
+            cortical_surface_model_id = self.default_objects['cortical_surface_model']
+        if cifti_template_file is None:
+            # use default cifti template
+            cifti_template_file = cbu.cifti_template_file
+
         # load the template cifti
         cifti_template = self.load_file(cifti_template_file, nib.load)
         brain_models = [x for x in cifti_template.header.get_index_map(1).brain_models]
@@ -155,7 +172,7 @@ class Cerebro_brain_viewer():
         # get appropriate IDs
         model_id = self.created_objects[cortical_surface_model_id]['object_id']
         unique_id = f'{utils.generate_unique_id()}'
-        object_collection_id = f'CIFTI_space#{unique_id}'
+        object_collection_id = f'cifti_space#{unique_id}'
 
         # store all visualized objects
         contained_object_ids = []
@@ -196,7 +213,7 @@ class Cerebro_brain_viewer():
         collection_object = {
             'object_id': object_collection_id,
             'object_type': 'object_collection',
-            'collection_type': 'CIFTI_space',
+            'collection_type': 'cifti_space',
             'cifti_template': cifti_template,
             'contained_object_ids': contained_object_ids,
             'layers': {},
@@ -204,15 +221,21 @@ class Cerebro_brain_viewer():
         }
         self.created_objects[object_collection_id] = collection_object
 
+        # set as default cifti space
+        self.default_objects['cifti_space'] = object_collection_id
+
+        # draw to update visualization
+        self.draw()
+
         # return object to user
         return collection_object
 
-    def data_to_colors(self, data, colormap=None, clims=None, vlims=None, invert=False, opacity=1, null_color=None, scale=None, dscalar_index=0):
+    def data_to_colors(self, data, colormap=None, clims=None, vlims=None, invert=False, opacity=1, exclusion_color=None, scale=None, dscalar_index=0):
         # initialization
         if colormap is None:
             colormap = self.default_colormap
-        if null_color is None:
-            null_color = self.null_color
+        if exclusion_color is None:
+            exclusion_color = self.no_color
 
         # create exclusion mask
         exclude = np.isinf(data) | np.isnan(data)
@@ -244,7 +267,7 @@ class Cerebro_brain_viewer():
         exclude |= invalid_data
 
         # load default null colors
-        colors = np.array(null_color)[np.newaxis, :].repeat(data.shape[0], 0)
+        colors = np.array(exclusion_color)[np.newaxis, :].repeat(data.shape[0], 0)
 
         # produce colors
         colors[~exclude] = colormap(normalized_data[~exclude])
@@ -272,7 +295,7 @@ class Cerebro_brain_viewer():
 
         return overlay_colors
 
-    def add_CIFTI_dscalar_layer(self, cifti_space_id, dscalar_file=None, loaded_dscalar=None, dscalar_data=None, dscalar_index=0, **kwargs):
+    def add_cifti_dscalar_layer(self, cifti_space_id, dscalar_file=None, loaded_dscalar=None, dscalar_data=None, dscalar_index=0, **kwargs):
         # initialization
         unique_id = f'{utils.generate_unique_id()}'
         layer_type = 'cifti_dscalar_layer'
@@ -307,6 +330,9 @@ class Cerebro_brain_viewer():
         }
         self.created_layers[layer_id] = created_layer
         cifti_space['layers'][layer_order] = layer_id
+
+        # draw to update visualization
+        self.draw()
 
         return created_layer
 
@@ -389,6 +415,14 @@ class Cerebro_brain_viewer():
             if self.created_objects[object_id].get('render_update_required', False):
                 self.render_object(object_id)
         utils.garbage_collect()
+
+    def draw(self):
+        # update any required renders
+        self.update_layers()
+        self.render_update()
+
+        # run the viewer window
+        self.viewer.draw()
 
     def show(self):
         # update any required renders
