@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "Cerebro_Viewer"
-version = "0.0.4"
+version = "0.0.5"
 authors = [
   { name="Sina Mansour L.", email="sina.mansour.lakouraj@gmail.com" },
 ]
@@ -24,6 +24,7 @@ dependencies = [
     'nibabel',
     'trimesh',
     'Panda3D',
+    'skimage',
 ]
 
 [project.urls]

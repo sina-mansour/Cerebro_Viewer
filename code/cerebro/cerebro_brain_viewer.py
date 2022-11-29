@@ -156,7 +156,22 @@ class Cerebro_brain_viewer():
             **kwargs
         }
 
-    def visualize_cifti_space(self, cortical_surface_model_id=None, cifti_template_file=None):
+    def create_spheres_object(self, object_id, coordinates, radii, **kwargs):
+        return {
+            **{
+                'object_id': object_id,
+                'object_type': 'spheres',
+                'coordinates': coordinates,
+                'radii': radii,
+                'layers': {},
+                'visibility': True,
+                'render_update_required': True,
+                'rendered': False,
+            },
+            **kwargs
+        }
+
+    def visualize_cifti_space(self, cortical_surface_model_id=None, cifti_template_file=None, volumetric_structures='none', volume_rendering='surface', **kwargs):
         # initialization
         if cortical_surface_model_id is None:
             cortical_surface_model_id = self.default_objects['cortical_surface_model']
@@ -208,6 +223,52 @@ class Cerebro_brain_viewer():
             data_index_count=brain_model.index_count,
             object_collection_id=object_collection_id,
         )
+
+        # add the subcortical structures
+        transformation_matrix = cifti_template.header.get_index_map(1).volume.transformation_matrix_voxel_indices_ijk_to_xyz.matrix
+        for brain_structure in brain_structures:
+            if volumetric_structures in cbu.volumetric_structure_inclusion_dict[brain_structure]:
+                brain_model = brain_models[brain_structures.index(brain_structure)]
+                object_id = f'{brain_structure}#{unique_id}'
+                contained_object_ids.append(object_id)
+                voxels_ijk = np.array(brain_model.voxel_indices_ijk)
+                coordinates = nib.affines.apply_affine(transformation_matrix, voxels_ijk)
+                voxel_size = nib.affines.voxel_sizes(transformation_matrix)
+                radii = voxel_size[np.newaxis, :].repeat(coordinates.shape[0], 0) / 2
+                if volume_rendering == 'spheres':
+                    self.created_objects[object_id] = self.create_spheres_object(
+                        object_id=object_id,
+                        coordinates=coordinates,
+                        radii=radii,
+                        data_index_offset=brain_model.index_offset,
+                        data_index_count=brain_model.index_count,
+                        object_collection_id=object_collection_id,
+                    )
+                elif volume_rendering == 'spheres_peeled':
+                    # apply peeling to get a thin layer from subcortical structures
+                    selection_mask = cbu.get_voxels_depth_mask(voxels_ijk, **kwargs)
+                    self.created_objects[object_id] = self.create_spheres_object(
+                        object_id=object_id,
+                        coordinates=coordinates[selection_mask],
+                        radii=radii[selection_mask],
+                        data_map=np.where(selection_mask),
+                        data_index_offset=brain_model.index_offset,
+                        data_index_count=brain_model.index_count,
+                        object_collection_id=object_collection_id,
+                    )
+                elif volume_rendering == 'surface':
+                    # use a marching cube algorithm with smoothing to generate a surface model
+                    surface_vertices, surface_triangles = cbu.generate_surface_marching_cube(voxels_ijk, transformation_matrix, **kwargs)
+                    nearest_distances, nearest_indices = cbu.get_nearest_neighbors(coordinates, surface_vertices)
+                    self.created_objects[object_id] = self.create_surface_mesh_object(
+                        object_id=object_id,
+                        vertices=surface_vertices,
+                        triangles=surface_triangles,
+                        data_index_offset=brain_model.index_offset,
+                        data_index_count=brain_model.index_count,
+                        data_vertex_map=nearest_indices,
+                        object_collection_id=object_collection_id,
+                    )
 
         # create the cifti collection space
         collection_object = {
@@ -273,7 +334,7 @@ class Cerebro_brain_viewer():
         colors[~exclude] = colormap(normalized_data[~exclude])
 
         # override opacity of valid colors
-        colors[~exclude][:, 3] = opacity
+        colors[~exclude, 3] = opacity
 
         return colors
 
@@ -295,7 +356,11 @@ class Cerebro_brain_viewer():
 
         return overlay_colors
 
-    def add_cifti_dscalar_layer(self, cifti_space_id, dscalar_file=None, loaded_dscalar=None, dscalar_data=None, dscalar_index=0, **kwargs):
+    def add_cifti_dscalar_layer(self, cifti_space_id=None, dscalar_file=None, loaded_dscalar=None, dscalar_data=None, dscalar_index=0, **kwargs):
+        if cifti_space_id is None:
+            # use default loaded cifti space
+            cifti_space_id = self.default_objects['cifti_space']
+
         # initialization
         unique_id = f'{utils.generate_unique_id()}'
         layer_type = 'cifti_dscalar_layer'
@@ -376,12 +441,20 @@ class Cerebro_brain_viewer():
             index_count = surface_mesh_object['data_index_count']
             extracted_colors = layer_object['layer_colors'][index_offset: (index_offset + index_count)]
 
-            # the extracted colors need to be mapped to the surface
-            layer_surface_colors = np.array(self.no_color)[np.newaxis, :].repeat(surface_vertices.shape[0], 0)
-            layer_surface_colors[surface_mesh_object['data_vertex_indices']] = extracted_colors
+            # check colors have expected shape
+            if (extracted_colors.shape[0] == index_count):
+                if surface_mesh_object.get('data_vertex_map', None) is not None:
+                    extracted_colors = extracted_colors[surface_mesh_object['data_vertex_map']]
 
-            # compute the layer overlay
-            surface_colors = self.compute_overlay_colors(surface_colors, layer_surface_colors)
+                # the extracted colors need to be mapped to the surface
+                layer_surface_colors = np.array(self.no_color)[np.newaxis, :].repeat(surface_vertices.shape[0], 0)
+                if surface_mesh_object.get('data_vertex_indices', None) is not None:
+                    layer_surface_colors[surface_mesh_object['data_vertex_indices']] = extracted_colors
+                else:
+                    layer_surface_colors = extracted_colors
+
+                # compute the layer overlay
+                surface_colors = self.compute_overlay_colors(surface_colors, layer_surface_colors)
 
         # clear existing render
         if surface_mesh_object['rendered']:
@@ -398,10 +471,55 @@ class Cerebro_brain_viewer():
         # update object boundaries
         self.min_coordinate = np.min([self.min_coordinate, surface_vertices.min(0)], 0)
         self.max_coordinate = np.max([self.max_coordinate, surface_vertices.max(0)], 0)
-        new_center_coordinate = (self.min_coordinate + self.max_coordinate) / 2
-        if (self.center_coordinate != new_center_coordinate).any():
-            self.center_coordinate = new_center_coordinate
-            self.change_view((None, new_center_coordinate, None, None))
+
+        # signal that render was updated
+        self.created_objects[object_id]['render_update_required'] = False
+
+    def render_spheres(self, object_id):
+        # load vertices and triangles
+        spheres_object = self.created_objects[object_id]
+        coordinates = spheres_object['coordinates']
+        radii = spheres_object['radii']
+
+        # initial colors
+        colors = np.array(self.null_color)[np.newaxis, :].repeat(coordinates.shape[0], 0)
+
+        # add layers one by one
+        for layer_idx in range(len(spheres_object['layers'])):
+            layer_id = spheres_object['layers'][layer_idx]
+            layer_object = self.created_layers[layer_id]
+
+            # extract colors from layer
+            index_offset = spheres_object['data_index_offset']
+            index_count = spheres_object['data_index_count']
+            extracted_colors = layer_object['layer_colors'][index_offset: (index_offset + index_count)]
+
+            # check colors have expected shape
+            if (extracted_colors.shape[0] == index_count):
+                if spheres_object.get('data_map', None) is not None:
+                    extracted_colors = extracted_colors[spheres_object['data_map']]
+
+                # the extracted colors need to be mapped to the spheres
+                layer_colors = np.array(self.no_color)[np.newaxis, :].repeat(coordinates.shape[0], 0)
+                if spheres_object.get('data_indices', None) is not None:
+                    layer_colors[spheres_object['data_indices']] = extracted_colors
+                else:
+                    layer_colors = extracted_colors
+
+                # compute the layer overlay
+                colors = self.compute_overlay_colors(colors, layer_colors)
+
+        # clear existing render
+
+        # render the object
+        spheres_object['colors'] = colors
+        rendered_spheres = self.viewer.add_points(coordinates, radii, colors)
+        spheres_object['rendered_spheres'] = rendered_spheres
+        spheres_object['rendered'] = True
+
+        # update object boundaries
+        self.min_coordinate = np.min([self.min_coordinate, coordinates.min(0)], 0)
+        self.max_coordinate = np.max([self.max_coordinate, coordinates.max(0)], 0)
 
         # signal that render was updated
         self.created_objects[object_id]['render_update_required'] = False
@@ -409,11 +527,20 @@ class Cerebro_brain_viewer():
     def render_object(self, object_id):
         if self.created_objects[object_id]['object_type'] == 'surface_mesh':
             self.render_surface_mesh(object_id)
+        elif self.created_objects[object_id]['object_type'] == 'spheres':
+            self.render_spheres(object_id)
+
+    def center_camera(self):
+        new_center_coordinate = (self.min_coordinate + self.max_coordinate) / 2
+        if (self.center_coordinate != new_center_coordinate).any():
+            self.center_coordinate = new_center_coordinate
+            self.change_view((None, new_center_coordinate, None, None))
 
     def render_update(self):
         for object_id in self.created_objects:
             if self.created_objects[object_id].get('render_update_required', False):
                 self.render_object(object_id)
+        self.center_camera()
         utils.garbage_collect()
 
     def draw(self):
