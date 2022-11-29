@@ -186,20 +186,22 @@ class Cerebro_window(ShowBase):
     def update_camera(self, camera_target=None, camera_pos=None, camera_rotation=None, camera_fov=None):
         if camera_pos is not None:
             (self.cam_init_x, self.cam_init_y, self.cam_init_z) = camera_pos
+            self.camera_pivot_node.lookAt(self.cam_init_x, self.cam_init_y, self.cam_init_z)
         if camera_target is not None:
             (self.cam_target_x, self.cam_target_y, self.cam_target_z) = camera_target
+            self.camera_pivot_node.setPos(
+                self.cam_target_x,
+                self.cam_target_y,
+                self.cam_target_z
+            )
         if camera_rotation is not None:
             self.camera_rotation = camera_rotation
+            self.camera_pivot_node.setR(self.camera_rotation)
         if camera_fov is not None:
             self.camera_fov = camera_fov
-        self.camera_pivot_node.setPos(
-            self.cam_target_x,
-            self.cam_target_y,
-            self.cam_target_z
-        )
-        self.camera_pivot_node.lookAt(self.cam_init_x, self.cam_init_y, self.cam_init_z)
-        self.camera_pivot_node.setR(self.camera_rotation)
-        self.cam.node().getLens().setFov(self.camera_fov)
+            self.cam.node().getLens().setFov(self.camera_fov)
+
+        # reorder faces
         self.camera_direction = np.array(self.camera.get_pos(self.render))
         self.reorder_faces_of_all_objects()
 
@@ -219,6 +221,7 @@ class Cerebro_window(ShowBase):
         ud_position = 0
         rl_position = 0
         zoom_factor = 0
+        camera_rotation = 0
 
         # if shift is pressed
         if self.key_map['shift']:
@@ -239,6 +242,10 @@ class Cerebro_window(ShowBase):
                 zoom_factor -= dt * self.zoom_speed
             if self.key_map['down']:
                 zoom_factor += dt * self.zoom_speed
+            if self.key_map['right']:
+                camera_rotation += dt * self.rotation_speed
+            if self.key_map['left']:
+                camera_rotation -= dt * self.rotation_speed
             if self.key_map['left-click']:
                 zoom_factor += (self.mouse_y - self.mouse_y_previous) * self.zoom_speed
         # otherwise
@@ -286,6 +293,11 @@ class Cerebro_window(ShowBase):
             self.camera_pivot_node.setY(self.camera_pivot_node.getY() + rl_position)
             self.camera_pivot_node.wrtReparentTo(self.render)
             self.camera_rotation_node_ud.removeNode()
+
+        # Perform camera rotation
+        if (camera_rotation != 0):
+            current_R = self.camera.getR()
+            self.camera.setR(current_R + camera_rotation)
 
         # Perform zoom
         if (zoom_factor != 0):
@@ -368,9 +380,9 @@ class Cerebro_window(ShowBase):
 
     # Define a function to prepared a two-sided transparent node path
     def apply_transparency_to_node_path(self, node_path, transparent):
+        node_path.setTwoSided(True)
         if transparent:
             # Ref: https://docs.panda3d.org/1.11/cpp/reference/panda3d.core.TransparencyAttrib
-            node_path.setTwoSided(True)
             node_path.setTransparency(TransparencyAttrib.MDual)
         else:
             node_path.setTransparency(False)
@@ -498,7 +510,7 @@ class Cerebro_window(ShowBase):
 
     # Define a function to create a sphere
     def create_sphere_mesh(self, node_name='sphere', **kwargs):
-        sphere = trimesh.creation.icosphere(subdivisions=3)
+        sphere = trimesh.creation.icosphere(subdivisions=2)
         return self.create_surface_mesh(
             vertices=np.array(sphere.vertices),
             triangles=np.array(sphere.faces),
@@ -514,7 +526,7 @@ class Cerebro_window(ShowBase):
         for i in range(coordinates.shape[0]):
             sphere_placehoders[i] = self.render.attachNewNode(f'sphere-placeholder-{i}#{surface_id}')
             sphere_placehoders[i].setPos(*list(coordinates[i]))
-            sphere_placehoders[i].setScale(radii[i], radii[i], radii[i])
+            sphere_placehoders[i].setScale(radii[i][0], radii[i][1], radii[i][2])
             sphere_placehoders[i].setColor(*list(colors[i]))
             sphere_placehoders[i].setTransparency(TransparencyAttrib.MDual)
             self.template_sphere_object['node_path'].instanceTo(sphere_placehoders[i])
