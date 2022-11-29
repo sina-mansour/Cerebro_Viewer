@@ -36,3 +36,27 @@ In Brainhack Global 2022 we aim to:
 4. Submitting issues for feature requests.
 5. And finally, if you like, contributing to the script.
 
+---
+
+To try the package, run the following code after installation:
+
+```python
+from cerebro import cerebro_brain_utils as cbu
+from cerebro import cerebro_brain_viewer as cbv
+
+my_brain_viewer = cbv.Cerebro_brain_viewer()
+
+# render a surface
+surface = 'pial'
+surface_model = my_brain_viewer.load_template_GIFTI_cortical_surface_models(surface)
+
+cifti_space = my_brain_viewer.visualize_cifti_space()
+
+# render data over surface
+dscalar_file = cbu.get_data_file(f'templates/HCP/dscalars/hcp.gradients.dscalar.nii')
+dscalar_layer = my_brain_viewer.add_cifti_dscalar_layer(dscalar_file=dscalar_file,)
+
+# enter interactive view
+my_brain_viewer.show()
+
+```
