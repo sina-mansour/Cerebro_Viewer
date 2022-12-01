@@ -38,6 +38,10 @@ In Brainhack Global 2022 we aim to:
 
 **Contributor:** Nazanin Sheykh Andalibi, Western Sydney University
 
+**Contributor:** Sara, Western Sydney
+
+**Contributor:** Arush Arun
+
 ---
 
 To try the package, run the following code after installation:
