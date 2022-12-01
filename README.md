@@ -44,6 +44,8 @@ In Brainhack Global 2022 we aim to:
 
 **Contributor:** Arush Arun
 
+**Contributor** Brooklyn Wright 
+
 ---
 
 To try the package, run the following code after installation:
