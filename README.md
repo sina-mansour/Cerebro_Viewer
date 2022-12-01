@@ -36,9 +36,8 @@ In Brainhack Global 2022 we aim to:
 4. Submitting issues for feature requests.
 5. And finally, if you like, contributing to the script.
 
-**contributer:** Sara, WesternSydney
-
-
+**Contributor:** Sara, WesternSydney
+**Contributor:** Arush Arun
 
 ---
 
