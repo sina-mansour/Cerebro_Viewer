@@ -593,6 +593,9 @@ class Cerebro_brain_viewer():
     def draw_to_matplotlib_axes(self, ax):
         """Draw an offscreen-rendered view to a matplotlib axes.
 
+        Note: this functionality is experimental and might not fully work depending on
+        viewer configuration.
+
         Args:
             ax (matplotlib.Axes): the axes into which the view will be drawn.
         """
