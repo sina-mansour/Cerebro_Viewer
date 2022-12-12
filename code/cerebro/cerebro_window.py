@@ -33,26 +33,16 @@ core.load_prc_file_data('', 'win-size 1280 720')
 class Cerebro_window(ShowBase):
 
     def __init__(self, background_color=(0.1, 0.1, 0.1, 0.0), camera_pos=(400, 0, 0), camera_target=(0, 0, 0), camera_fov=35, camera_rotation=0, rotation_speed=100, movement_speed=100, zoom_speed=0.2, window_size=(1280, 720), offscreen=False):
+        # Handle offscreen rendering
         windowType = 'offscreen' if offscreen else None
         super().__init__(self, windowType=windowType)
 
         # Initial configurations
-        self.set_background_color(*list(background_color))
-        # self.set_scene_graph_analyzer_meter(True)
-        # self.set_frame_rate_meter(True)
-        # Window properties
-        # Ref: https://docs.panda3d.org/1.11/cpp/reference/panda3d.core.WindowProperties
-        window_properties = core.WindowProperties()
-        window_properties.set_size(window_size[0], window_size[1])
-        window_properties.set_title('Cerebro Viewer')
-        window_properties.set_icon_filename('Cerebro_Viewer.ico')
-        self._window_properties = window_properties
 
-        if not offscreen:
-            self.win.requestProperties(window_properties)
-
-            # Keyboard and mouse setup
-            self.setup_keyboard_and_mouse()
+        # Window information
+        self.background_color = background_color
+        self.window_size = window_size
+        self.offscreen = offscreen
 
         # Camera positioning
         # position is relative to target
@@ -60,19 +50,29 @@ class Cerebro_window(ShowBase):
         self.cam_target_x, self.cam_target_y, self.cam_target_z = list(camera_target)
         self.camera_fov = camera_fov
         self.camera_rotation = camera_rotation
-        self.setup_camera()
 
         # Update speed
         self.rotation_speed = rotation_speed
         self.movement_speed = movement_speed
         self.zoom_speed = zoom_speed
 
+        # Setup procedures
+
+        # Window setup
+        self.setup_window()
+
+        # Camera setup
+        self.setup_camera()
+
         if not offscreen:
+            # Keyboard and mouse setup
+            self.setup_keyboard_and_mouse()
+
             # Add the update task to the task manager.
             self.taskMgr.add(self.update_task, "update_task")
 
-            # Add the repeated checking task to the task manager
-            self.taskMgr.doMethodLater(0.05, self.repeated_checks_task, "repeated_checks_task")
+        # Add the repeated checking task to the task manager
+        self.taskMgr.doMethodLater(0.05, self.repeated_checks_task, "repeated_checks_task")
 
         # Create a dictionary for rendered objects
         self.created_objects = {}
@@ -86,6 +86,21 @@ class Cerebro_window(ShowBase):
     def draw(self):
         self.taskMgr.step()
         self.taskMgr.step()
+
+    # Window setup procedure
+    def setup_window(self):
+        self.set_background_color(*list(self.background_color))
+        # self.set_scene_graph_analyzer_meter(True)
+        # self.set_frame_rate_meter(True)
+        # Window properties
+        # Ref: https://docs.panda3d.org/1.11/cpp/reference/panda3d.core.WindowProperties
+        self.window_properties = core.WindowProperties()
+        self.window_properties.set_size(self.window_size[0], self.window_size[1])
+        self.window_properties.set_title('Cerebro Viewer')
+        self.window_properties.set_icon_filename('Cerebro_Viewer.ico')
+
+        if not self.offscreen:
+            self.win.requestProperties(self.window_properties)
 
     # Keyboard and mouse setup procedure
     def setup_keyboard_and_mouse(self):
