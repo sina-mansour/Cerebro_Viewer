@@ -15,17 +15,13 @@ import trimesh
 
 from direct.showbase.ShowBase import ShowBase
 from direct.task import Task
-from panda3d.core import WindowProperties, ModifierButtons, ClockObject
-from panda3d.core import GeomVertexFormat, GeomVertexArrayFormat, Geom
-from panda3d.core import GeomVertexData, GeomTriangles, GeomEnums, GeomNode
-from panda3d.core import RenderState, TransparencyAttrib, NodePath
-from panda3d.core import load_prc_file_data
+from panda3d import core
 
 from . import cerebro_utils as utils
 
 
 # configurations
-load_prc_file_data('', 'win-size 1280 720')
+core.load_prc_file_data('', 'win-size 1280 720')
 # load_prc_file_data('', 'window-title Cerebro Viewer')
 # load_prc_file_data('', 'icon-filename Cerebro_Viewer.ico')
 # load_prc_file_data("","framebuffer-multisample True")
@@ -46,7 +42,7 @@ class Cerebro_window(ShowBase):
         # self.set_frame_rate_meter(True)
         # Window properties
         # Ref: https://docs.panda3d.org/1.11/cpp/reference/panda3d.core.WindowProperties
-        window_properties = WindowProperties()
+        window_properties = core.WindowProperties()
         window_properties.set_size(window_size[0], window_size[1])
         window_properties.set_title('Cerebro Viewer')
         window_properties.set_icon_filename('Cerebro_Viewer.ico')
@@ -118,8 +114,8 @@ class Cerebro_window(ShowBase):
         self.mouse_y_previous = self.mouse_y
 
         # Treat modifier keys as normal keys
-        self.mouseWatcherNode.set_modifier_buttons(ModifierButtons())
-        self.buttonThrowers[0].node().set_modifier_buttons(ModifierButtons())
+        self.mouseWatcherNode.set_modifier_buttons(core.ModifierButtons())
+        self.buttonThrowers[0].node().set_modifier_buttons(core.ModifierButtons())
 
         # Handle key press
         self.accept('arrow_up', self.update_key_map, ['up', True])
@@ -219,7 +215,7 @@ class Cerebro_window(ShowBase):
             self.mouse_y = self.mouseWatcherNode.getMouseY()
 
         # A frame-based time multiplier
-        dt = ClockObject.getGlobalClock().getDt()
+        dt = core.ClockObject.getGlobalClock().getDt()
 
         ud_rotation = 0
         rl_rotation = 0
@@ -341,17 +337,17 @@ class Cerebro_window(ShowBase):
             faces_array = array.array("I", self.sort_faces(direction, triangles, vertices).reshape(-1))
 
         # specify a generic vertex format
-        vertex_format = GeomVertexFormat()
+        vertex_format = core.GeomVertexFormat()
         # add 3d coordinates to the format
-        vertex_format.add_array(GeomVertexFormat.get_v3().arrays[0])
+        vertex_format.add_array(core.GeomVertexFormat.get_v3().arrays[0])
         # add color information to the format if requested
         if vertex_colors is not None:
-            vertex_format.add_array(GeomVertexArrayFormat('color', 4, Geom.NT_uint8, Geom.C_color))
+            vertex_format.add_array(core.GeomVertexArrayFormat('color', 4, core.Geom.NT_uint8, core.Geom.C_color))
         # register format
-        vertex_format = GeomVertexFormat.register_format(vertex_format)
+        vertex_format = core.GeomVertexFormat.register_format(vertex_format)
 
         # create data using this format
-        vertex_data = GeomVertexData("vertex_data", vertex_format, Geom.UH_static)
+        vertex_data = core.GeomVertexData("vertex_data", vertex_format, core.Geom.UH_static)
         # set the number of vertices according to the surface mesh
         vertex_data.unclean_set_num_rows(vertices.shape[0])
 
@@ -365,20 +361,20 @@ class Cerebro_window(ShowBase):
             color_memview[:] = colors
 
         # store face indices
-        tris_prim = GeomTriangles(GeomEnums.UH_static)
-        tris_prim.set_index_type(GeomEnums.NT_uint32)
+        tris_prim = core.GeomTriangles(core.GeomEnums.UH_static)
+        tris_prim.set_index_type(core.GeomEnums.NT_uint32)
         tris_array = tris_prim.modify_vertices()
         tris_array.unclean_set_num_rows(len(faces_array))
         tris_memview = memoryview(tris_array).cast('B').cast('I')
         tris_memview[:] = faces_array
 
         # construct geometry
-        surface_geometry = Geom(vertex_data)
+        surface_geometry = core.Geom(vertex_data)
         surface_geometry.addPrimitive(tris_prim)
 
         # construct node to hold the geometry
-        surface_node = GeomNode(node_name)
-        surface_node.addGeom(surface_geometry, RenderState.makeEmpty())
+        surface_node = core.GeomNode(node_name)
+        surface_node.addGeom(surface_geometry, core.RenderState.makeEmpty())
 
         # return the created node
         return surface_node
@@ -388,7 +384,7 @@ class Cerebro_window(ShowBase):
         node_path.setTwoSided(True)
         if transparent:
             # Ref: https://docs.panda3d.org/1.11/cpp/reference/panda3d.core.TransparencyAttrib
-            node_path.setTransparency(TransparencyAttrib.MDual)
+            node_path.setTransparency(core.TransparencyAttrib.MDual)
         else:
             node_path.setTransparency(False)
 
@@ -426,7 +422,7 @@ class Cerebro_window(ShowBase):
         )
 
         # connect the node to a nodepath
-        surface_node_path = NodePath(surface_node)
+        surface_node_path = core.NodePath(surface_node)
 
         # prepare nodepath
         self.prepare_node_path(surface_node_path, transparent=True, visualize=visualize)
@@ -461,7 +457,7 @@ class Cerebro_window(ShowBase):
                 vertex_colors=self.created_objects[node_name]['vertex_colors'],
                 direction=self.camera_direction
             )
-            surface_node_path = NodePath(surface_node)
+            surface_node_path = core.NodePath(surface_node)
             self.prepare_node_path(
                 surface_node_path,
                 transparent=self.created_objects[node_name]['transparent'],
@@ -533,7 +529,7 @@ class Cerebro_window(ShowBase):
             sphere_placehoders[i].setPos(*list(coordinates[i]))
             sphere_placehoders[i].setScale(radii[i][0], radii[i][1], radii[i][2])
             sphere_placehoders[i].setColor(*list(colors[i]))
-            sphere_placehoders[i].setTransparency(TransparencyAttrib.MDual)
+            sphere_placehoders[i].setTransparency(core.TransparencyAttrib.MDual)
             self.template_sphere_object['node_path'].instanceTo(sphere_placehoders[i])
 
         self.created_objects[node_name] = {
@@ -575,11 +571,11 @@ class Cerebro_window(ShowBase):
             radius = radii[i]
 
             # resize the placeholder
-            cylinder_placehoders[i] = NodePath(f'cylinder-placeholder-{i}#{surface_id}')
+            cylinder_placehoders[i] = core.NodePath(f'cylinder-placeholder-{i}#{surface_id}')
             cylinder_placehoders[i].setPos(*list(start + [0, 0, length / 2]))
             cylinder_placehoders[i].setScale(radius, radius, length)
             cylinder_placehoders[i].setColor(*list(colors[i]))
-            cylinder_placehoders[i].setTransparency(TransparencyAttrib.MDual)
+            cylinder_placehoders[i].setTransparency(core.TransparencyAttrib.MDual)
             self.template_cylinder_object['node_path'].instanceTo(cylinder_placehoders[i])
 
             cylinder_placehoder_pivots[i] = self.render.attachNewNode(f'cylinder-placeholder-pivot-{i}#{surface_id}')
