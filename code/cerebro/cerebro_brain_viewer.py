@@ -19,7 +19,6 @@ Author: Sina Mansour L.
 import matplotlib.pyplot as plt
 import numpy as np
 import nibabel as nib
-from panda3d import core
 
 from . import renderer
 from . import cerebro_utils as utils
@@ -57,9 +56,6 @@ class Cerebro_brain_viewer():
         self.camera_config = self.view_to_camera_config(self.view)
 
         self.viewer = renderer.Renderer_panda3d(background_color=background_color, offscreen=offscreen, **self.camera_config)
-
-        if offscreen:
-            self._setup_offscreen_renderer()
 
         # Create a dictionary for created objects
         self.created_objects = {}
@@ -566,31 +562,7 @@ class Cerebro_brain_viewer():
         # run the viewer window
         self.viewer.show()
 
-    def _setup_offscreen_renderer(self):
-        """Configure a window buffer and display region for offscreen rendering."""
-
-        base = self.viewer.window
-
-        fb_prop = core.FrameBufferProperties()
-        fb_prop.setRgbColor(True)
-        # Only render RGB with 8 bit for each channel, no alpha channel
-        fb_prop.setRgbaBits(8, 8, 8, 0)
-        fb_prop.setDepthBits(24)
-        
-        # Create window (offscreen)
-        win_prop = base._window_properties
-        self._window_buffer = base.graphicsEngine.makeOutput(base.pipe, "cameraview", 0, fb_prop, win_prop, core.GraphicsPipe.BFRefuseWindow)
-
-        # Create display region
-        # This is the actual region used where the image will be rendered
-        self._disp_region = self._window_buffer.makeDisplayRegion()
-        self._disp_region.setCamera(base.cam)
-
-        # set the background color for the offscreen buffer
-        self._window_buffer.set_clear_color_active(True)
-        self._window_buffer.set_clear_color(core.LVecBase4f(*self.background_color))
-
-    def draw_to_matplotlib_axes(self, ax):
+    def offscreen_draw_to_matplotlib_axes(self, ax):
         """Draw an offscreen-rendered view to a matplotlib axes.
 
         Note: this functionality is experimental and might not fully work depending on
@@ -599,21 +571,4 @@ class Cerebro_brain_viewer():
         Args:
             ax (matplotlib.Axes): the axes into which the view will be drawn.
         """
-        base = self.viewer.window
-
-        # Create the texture that contain the image buffer
-        bgr_tex = core.Texture()
-        self._window_buffer.addRenderTexture(bgr_tex, core.GraphicsOutput.RTMCopyRam, core.GraphicsOutput.RTPColor)
-
-        # Now we can render the frame manually
-        base.graphicsEngine.renderFrame()
-
-        # Get the frame data as numpy array
-        bgr_img = np.frombuffer(bgr_tex.getRamImage(), dtype=np.uint8)
-        bgr_img.shape = (bgr_tex.getYSize(), bgr_tex.getXSize(), bgr_tex.getNumComponents())
-
-        # invert the channels from bgr to rgb
-        rgb_img = np.flip(bgr_img, axis=2)
-
-        # plot the image in a matplotlib axes
-        ax.imshow(rgb_img, origin='lower')
+        self.viewer.window.offscreen_draw_to_matplotlib_axes(ax)

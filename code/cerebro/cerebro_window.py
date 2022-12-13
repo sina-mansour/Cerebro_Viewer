@@ -40,7 +40,7 @@ class Cerebro_window(ShowBase):
         # Initial configurations
 
         # Window information
-        self.background_color = background_color
+        self.background_color = list(background_color)
         self.window_size = window_size
         self.offscreen = offscreen
 
@@ -58,11 +58,11 @@ class Cerebro_window(ShowBase):
 
         # Setup procedures
 
-        # Window setup
-        self.setup_window()
-
         # Camera setup
         self.setup_camera()
+
+        # Window setup
+        self.setup_window()
 
         if not offscreen:
             # Keyboard and mouse setup
@@ -71,8 +71,8 @@ class Cerebro_window(ShowBase):
             # Add the update task to the task manager.
             self.taskMgr.add(self.update_task, "update_task")
 
-        # Add the repeated checking task to the task manager
-        self.taskMgr.doMethodLater(0.05, self.repeated_checks_task, "repeated_checks_task")
+            # Add the repeated checking task to the task manager
+            self.taskMgr.doMethodLater(0.05, self.repeated_checks_task, "repeated_checks_task")
 
         # Create a dictionary for rendered objects
         self.created_objects = {}
@@ -89,9 +89,6 @@ class Cerebro_window(ShowBase):
 
     # Window setup procedure
     def setup_window(self):
-        self.set_background_color(*list(self.background_color))
-        # self.set_scene_graph_analyzer_meter(True)
-        # self.set_frame_rate_meter(True)
         # Window properties
         # Ref: https://docs.panda3d.org/1.11/cpp/reference/panda3d.core.WindowProperties
         self.window_properties = core.WindowProperties()
@@ -99,7 +96,44 @@ class Cerebro_window(ShowBase):
         self.window_properties.set_title('Cerebro Viewer')
         self.window_properties.set_icon_filename('Cerebro_Viewer.ico')
 
-        if not self.offscreen:
+        if self.offscreen:
+            # Configure a window buffer and display region for offscreen rendering.
+
+            # Frame buffer properties
+            self.framebuffer_properties = core.FrameBufferProperties()
+            self.framebuffer_properties.setRgbColor(True)
+            # Only render RGB with 8 bit for each channel, no alpha channel
+            self.framebuffer_properties.setRgbaBits(8, 8, 8, 0)
+            self.framebuffer_properties.setDepthBits(24)
+
+            # Window buffer
+            self.window_buffer = self.graphicsEngine.makeOutput(
+                pipe=self.pipe,
+                name="cameraview",
+                sort=0,
+                fb_prop=self.framebuffer_properties,
+                win_prop=self.window_properties,
+                flags=core.GraphicsPipe.BFRefuseWindow
+            )
+
+            # set the background color for the offscreen buffer
+            self.window_buffer.set_clear_color_active(True)
+            self.window_buffer.set_clear_color(core.LVecBase4f(*self.background_color))
+
+            # Create display region
+            self.display_region = self.window_buffer.makeDisplayRegion()
+            self.display_region.setCamera(self.cam)
+
+        else:
+            # Configure the default window
+
+            # Background color
+            self.set_background_color(*self.background_color)
+
+            # self.set_scene_graph_analyzer_meter(True)
+            # self.set_frame_rate_meter(True)
+
+            # Window properties
             self.win.requestProperties(self.window_properties)
 
     # Keyboard and mouse setup procedure
@@ -639,3 +673,30 @@ class Cerebro_window(ShowBase):
             if 'template' not in node_name:
                 self.clear_created_object(node_name)
         utils.garbage_collect()
+
+    # Draw an offscreen-rendered view to a matplotlib axes
+    def offscreen_draw_to_matplotlib_axes(self, ax):
+        """Draw an offscreen-rendered view to a matplotlib axes.
+
+        Note: this functionality is experimental and might not fully work depending on
+        viewer configuration.
+
+        Args:
+            ax (matplotlib.Axes): the axes into which the view will be drawn.
+        """
+        # Create the texture that contain the image buffer
+        bgr_tex = core.Texture()
+        self.window_buffer.addRenderTexture(bgr_tex, core.GraphicsOutput.RTMCopyRam, core.GraphicsOutput.RTPColor)
+
+        # Now we can render the frame manually
+        self.graphicsEngine.renderFrame()
+
+        # Get the frame data as numpy array
+        bgr_img = np.frombuffer(bgr_tex.getRamImage(), dtype=np.uint8)
+        bgr_img.shape = (bgr_tex.getYSize(), bgr_tex.getXSize(), bgr_tex.getNumComponents())
+
+        # invert the channels from bgr to rgb
+        rgb_img = np.flip(bgr_img, axis=2)
+
+        # plot the image in a matplotlib axes
+        ax.imshow(rgb_img, origin='lower')
