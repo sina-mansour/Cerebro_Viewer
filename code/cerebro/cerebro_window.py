@@ -257,24 +257,28 @@ class Cerebro_window(ShowBase):
     def update_camera(self, camera_target=None, camera_pos=None, camera_rotation=None, camera_fov=None):
         if camera_pos is not None:
             (self.cam_init_x, self.cam_init_y, self.cam_init_z) = camera_pos
-            self.camera_pivot_node.lookAt(self.cam_init_x, self.cam_init_y, self.cam_init_z)
-        if camera_target is not None:
-            (self.cam_target_x, self.cam_target_y, self.cam_target_z) = camera_target
-            self.camera_pivot_node.setPos(
-                self.cam_target_x,
-                self.cam_target_y,
-                self.cam_target_z
-            )
+        self.camera_pivot_node.lookAt(self.cam_init_x, self.cam_init_y, self.cam_init_z)
         if camera_rotation is not None:
             self.camera_rotation = camera_rotation
-            self.camera_pivot_node.setR(self.camera_rotation)
+        self.camera_pivot_node.setR(self.camera_rotation)
+        if camera_target is not None:
+            (self.cam_target_x, self.cam_target_y, self.cam_target_z) = camera_target
+        self.camera_pivot_node.setPos(
+            self.cam_target_x,
+            self.cam_target_y,
+            self.cam_target_z
+        )
         if camera_fov is not None:
             self.camera_fov = camera_fov
-            self.cam.node().getLens().setFov(self.camera_fov)
+        self.cam.node().getLens().setFov(self.camera_fov)
 
         # reorder faces
         self.camera_direction = np.array(self.camera.get_pos(self.render))
         self.reorder_faces_of_all_objects()
+
+    # Get camera position
+    def get_camera_target_position(self):
+        return np.array(self.camera_pivot_node.getPos())
 
     # Define a procedure to update the camera direction every frame.
     def update_task(self, task):

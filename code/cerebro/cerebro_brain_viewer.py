@@ -107,6 +107,9 @@ class Cerebro_brain_viewer():
         self.view = view
         self.camera_config = self.view_to_camera_config(self.view)
         self.viewer.change_view(**self.camera_config)
+        # force recenter
+        if isinstance(view, str):
+            self.viewer.change_view(**self.view_to_camera_config((None, self.center_coordinate, None, None)))
 
     def load_GIFTI_cortical_surface_models(self, left_surface_file, right_surface_file):
         # Get a unique ID
@@ -537,7 +540,7 @@ class Cerebro_brain_viewer():
         new_center_coordinate = (self.min_coordinate + self.max_coordinate) / 2
         if (self.center_coordinate != new_center_coordinate).any():
             self.center_coordinate = new_center_coordinate
-            self.change_view((None, new_center_coordinate, None, None))
+            self.change_view((None, self.center_coordinate, None, None))
 
     def render_update(self):
         for object_id in self.created_objects:
