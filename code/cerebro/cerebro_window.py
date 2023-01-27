@@ -276,6 +276,15 @@ class Cerebro_window(ShowBase):
         self.camera_direction = np.array(self.camera.get_pos(self.render))
         self.reorder_faces_of_all_objects()
 
+    # Get camera direction information
+    def get_camera_view(self):
+        return {
+            'camera_target': (self.cam_target_x, self.cam_target_y, self.cam_target_z),
+            'camera_pos': (self.cam_init_x, self.cam_init_y, self.cam_init_z),
+            'camera_rotation': self.camera_rotation,
+            'camera_fov': self.camera_fov,
+        }
+
     # Get camera position
     def get_camera_target_position(self):
         return np.array(self.camera_pivot_node.getPos())
@@ -389,6 +398,17 @@ class Cerebro_window(ShowBase):
 
         # Continue
         return Task.cont
+
+    # Move camera to a particular distance from center
+    def move_camera_to_distance(self, distance):
+        current_pos = self.camera.getPos()
+        current_distance = np.linalg.norm(current_pos)
+        zoom_factor = distance / current_distance
+        self.camera.setPos(
+            current_pos[0] * np.exp(zoom_factor),
+            current_pos[1] * np.exp(zoom_factor),
+            current_pos[2] * np.exp(zoom_factor),
+        )
 
     # Define a procedure to get a screenshot of the view.
     def get_screenshot(self, output_file):

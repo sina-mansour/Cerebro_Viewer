@@ -103,13 +103,25 @@ class Cerebro_brain_viewer():
             'camera_rotation': camera_rotation,
         }
 
-    def change_view(self, view):
+    def change_view(self, view, fit=False):
         self.view = view
         self.camera_config = self.view_to_camera_config(self.view)
+        if fit:
+            self.camera_config = self.zoom_camera_to_content(self.camera_config)
         self.viewer.change_view(**self.camera_config)
         # force recenter
         if isinstance(view, str):
             self.viewer.change_view(**self.view_to_camera_config((None, self.center_coordinate, None, None)))
+
+    def zoom_camera_to_content(self, camera_config):
+        coverage_radius = (self.max_coordinate - self.min_coordinate) / 2
+        if np.isnan(coverage_radius):
+            return camera_config
+        appropriate_distance = 1.1 * coverage_radius / np.tan(np.deg2rad(camera_config['camera_fov'] / 2))
+        current_distance = np.linalg.norm(camera_config['camera_pos'])
+        zoom_factor = appropriate_distance / current_distance
+        camera_config['camera_pos'] = (x * zoom_factor for x in camera_config['camera_pos'])
+        return camera_config
 
     def load_GIFTI_cortical_surface_models(self, left_surface_file, right_surface_file):
         # Get a unique ID
