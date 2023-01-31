@@ -35,7 +35,6 @@ cifti_template_file = os.path.join(data_directory, 'templates/HCP/dscalars/ones.
 
 # Utility lists and dictionaries
 
-
 volumetric_structure_inclusion_dict = {
     'CIFTI_STRUCTURE_CORTEX_LEFT': [],
     'CIFTI_STRUCTURE_CORTEX_RIGHT': [],
@@ -58,6 +57,29 @@ volumetric_structure_inclusion_dict = {
     'CIFTI_STRUCTURE_PUTAMEN_RIGHT': ['all', 'subcortex'],
     'CIFTI_STRUCTURE_THALAMUS_LEFT': ['all', 'subcortex'],
     'CIFTI_STRUCTURE_THALAMUS_RIGHT': ['all', 'subcortex'],
+}
+
+# coefficients of expansions for seperation of subcortical and cerebellar structures in cifti format
+cifti_expansion_coeffs = {
+    'CIFTI_STRUCTURE_ACCUMBENS_LEFT': (-0.15, 0.25, -0.5),
+    'CIFTI_STRUCTURE_ACCUMBENS_RIGHT': (0.15, 0.25, -0.5),
+    'CIFTI_STRUCTURE_AMYGDALA_LEFT': (-0.3, 0.25, -0.6),
+    'CIFTI_STRUCTURE_AMYGDALA_RIGHT': (0.3, 0.25, -0.6),
+    'CIFTI_STRUCTURE_BRAIN_STEM': (0, 0, -0.99),
+    'CIFTI_STRUCTURE_CAUDATE_LEFT': (0, 0.35, 0.05),
+    'CIFTI_STRUCTURE_CAUDATE_RIGHT': (0, 0.35, 0.05),
+    'CIFTI_STRUCTURE_CEREBELLUM_LEFT': (-0.4, -0.3, -0.7),
+    'CIFTI_STRUCTURE_CEREBELLUM_RIGHT': (0.4, -0.3, -0.7),
+    'CIFTI_STRUCTURE_DIENCEPHALON_VENTRAL_LEFT': (-0.1, 0, -0.4),
+    'CIFTI_STRUCTURE_DIENCEPHALON_VENTRAL_RIGHT': (0.1, 0, -0.4),
+    'CIFTI_STRUCTURE_HIPPOCAMPUS_LEFT': (-0.25, 0, -0.55),
+    'CIFTI_STRUCTURE_HIPPOCAMPUS_RIGHT': (0.25, 0, -0.55),
+    'CIFTI_STRUCTURE_PALLIDUM_LEFT': (-0.2, 0.2, -0.25),
+    'CIFTI_STRUCTURE_PALLIDUM_RIGHT': (0.2, 0.2, -0.25),
+    'CIFTI_STRUCTURE_PUTAMEN_LEFT': (-0.45, 0.15, -0.45),
+    'CIFTI_STRUCTURE_PUTAMEN_RIGHT': (0.45, 0.15, -0.45),
+    'CIFTI_STRUCTURE_THALAMUS_LEFT': (-0.45, 0.2, 0.),
+    'CIFTI_STRUCTURE_THALAMUS_RIGHT': (0.45, 0.2, 0.),
 }
 
 

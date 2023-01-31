@@ -258,6 +258,8 @@ class Cerebro_window(ShowBase):
         if camera_pos is not None:
             (self.cam_init_x, self.cam_init_y, self.cam_init_z) = camera_pos
         self.camera_pivot_node.lookAt(self.cam_init_x, self.cam_init_y, self.cam_init_z)
+        dist = np.sqrt((self.cam_init_x ** 2) + (self.cam_init_y ** 2) + (self.cam_init_z ** 2))
+        self.camera.setPos(0, dist, 0)
         if camera_rotation is not None:
             self.camera_rotation = camera_rotation
         self.camera_pivot_node.setR(self.camera_rotation)
