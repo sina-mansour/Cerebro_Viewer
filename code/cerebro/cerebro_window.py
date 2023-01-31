@@ -257,6 +257,7 @@ class Cerebro_window(ShowBase):
     def update_camera(self, camera_target=None, camera_pos=None, camera_rotation=None, camera_fov=None):
         if camera_pos is not None:
             (self.cam_init_x, self.cam_init_y, self.cam_init_z) = camera_pos
+        self.camera_pivot_node.setPos(0, 0, 0)
         self.camera_pivot_node.lookAt(self.cam_init_x, self.cam_init_y, self.cam_init_z)
         dist = np.sqrt((self.cam_init_x ** 2) + (self.cam_init_y ** 2) + (self.cam_init_z ** 2))
         self.camera.setPos(0, dist, 0)
