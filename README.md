@@ -5,6 +5,16 @@ A pythonic 3D viewer to visualize and plot brains and neuroimaging data
 
 ---
 
+## Citing Cerebro:
+
+Thanks for choosing Cerebro! We're honored to have you as a user. If you end up using our code in your project or research (which we hope you will!), we'd be grateful if you could give us a little shout-out by including a citation in your publication. This helps us spread the word, motivates us to keep making it better, and gives us warm and fuzzy feelings inside! 😊 Here's the reference you can use:
+
+[![DOI](https://zenodo.org/badge/563673348.svg)](https://zenodo.org/badge/latestdoi/563673348)
+
+Cerebro is a work in progress, and we're excited to share more with you soon! We're currently working on a manuscript that will explain how to use the software in your work. As soon as that's available, we'll let you know so you can cite it in your publication. Thanks for being part of our journey!
+
+---
+
 Cerebro aims to provide a solution to advance the currently available methods for visualization of neuroimaging and brain connectivity data.
 
 ## Installation
