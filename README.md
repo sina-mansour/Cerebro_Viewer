@@ -23,28 +23,7 @@ Were you ever stuck when trying to visualize your study findings? Did you want t
 
 ## Development plan
 
-Cerebro is currently under active development. The plan is to further develop exciting features through open-source contributions and discussions during hackathons, brainhacks, and other relevant opportunities.
-
-
-### Brainhack Global 2022
-
-In Brainhack Global 2022 we aim to:
-
-1. Brainstorm different visualization approaches to come up with ideas.
-2. List different file formats that Cerebro should be able to generate.
-3. Try a hands-on session of visualizing some brains with Cerebro.
-4. Submitting issues for feature requests.
-5. And finally, if you like, contributing to the script.
-
-**Contributor:** Niousha-Dehestani, Deakin University/University of Melbourne
-
-**Contributor:** Nazanin Sheykh Andalibi, Western Sydney University
-
-**Contributor:** Sara, Western Sydney
-
-**Contributor:** Arush Arun
-
-**Contributor** Brooklyn Wright 
+Cerebro is currently under active development. The plan is to further develop exciting features through open-source contributions and discussions during hackathons, brainhacks, and other relevant opportunities. Checkout the [contributors page](Contributors.md) to find out more.
 
 ---
 
