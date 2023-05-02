@@ -107,18 +107,7 @@ class Cerebro_window(ShowBase):
             self.framebuffer_properties.setDepthBits(24)
 
             # Window buffer
-            self.window_buffer = self.graphicsEngine.makeOutput(
-                pipe=self.pipe,
-                name="cameraview",
-                sort=0,
-                fb_prop=self.framebuffer_properties,
-                win_prop=self.window_properties,
-                flags=core.GraphicsPipe.BFRefuseWindow
-            )
-
-            # set the background color for the offscreen buffer
-            self.window_buffer.set_clear_color_active(True)
-            self.window_buffer.set_clear_color(core.LVecBase4f(*self.background_color))
+            self.make_offscreen_buffer(name="cameraview")
 
             # Create display region
             self.display_region = self.window_buffer.makeDisplayRegion()
@@ -135,6 +124,38 @@ class Cerebro_window(ShowBase):
 
             # Window properties
             self.win.requestProperties(self.window_properties)
+
+    # Change window size of offscreen renderer
+    def make_offscreen_buffer(self, name, pipe=None, sort=0, fb_prop=None, win_prop=None, flags=core.GraphicsPipe.BFRefuseWindow):
+        if pipe is None:
+            pipe = self.pipe
+        if fb_prop is None:
+            fb_prop = self.framebuffer_properties
+        if win_prop is None:
+            win_prop = self.window_properties
+        # Window buffer
+        self.window_buffer = self.graphicsEngine.makeOutput(
+            pipe=pipe, name=name, sort=0, fb_prop=fb_prop, win_prop=win_prop,
+            flags=flags, gsg=self.win.getGsg(), host=self.win,
+        )
+
+        # set the background color for the offscreen buffer
+        self.window_buffer.set_clear_color_active(True)
+        self.window_buffer.set_clear_color(core.LVecBase4f(*self.background_color))
+
+    # Change window size of offscreen renderer
+    def reset_offscreen_size(self, x, y):
+        # self.win.removeDisplayRegion(self.display_region)
+        self.window_buffer.remove_all_display_regions()
+        self.window_properties.set_size(x, y)
+
+        # Window buffer
+        self.make_offscreen_buffer(name="cameraview")
+
+        # Create display region
+        self.display_region = self.window_buffer.makeDisplayRegion()
+        self.camLens.setAspectRatio(float(x) / y)
+        self.display_region.setCamera(self.cam)
 
     # Keyboard and mouse setup procedure
     def setup_keyboard_and_mouse(self):
@@ -236,24 +257,40 @@ class Cerebro_window(ShowBase):
     def update_camera(self, camera_target=None, camera_pos=None, camera_rotation=None, camera_fov=None):
         if camera_pos is not None:
             (self.cam_init_x, self.cam_init_y, self.cam_init_z) = camera_pos
-            self.camera_pivot_node.lookAt(self.cam_init_x, self.cam_init_y, self.cam_init_z)
-        if camera_target is not None:
-            (self.cam_target_x, self.cam_target_y, self.cam_target_z) = camera_target
-            self.camera_pivot_node.setPos(
-                self.cam_target_x,
-                self.cam_target_y,
-                self.cam_target_z
-            )
+        self.camera_pivot_node.setPos(0, 0, 0)
+        self.camera_pivot_node.lookAt(self.cam_init_x, self.cam_init_y, self.cam_init_z)
+        dist = np.sqrt((self.cam_init_x ** 2) + (self.cam_init_y ** 2) + (self.cam_init_z ** 2))
+        self.camera.setPos(0, dist, 0)
         if camera_rotation is not None:
             self.camera_rotation = camera_rotation
-            self.camera_pivot_node.setR(self.camera_rotation)
+        self.camera_pivot_node.setR(self.camera_rotation)
+        if camera_target is not None:
+            (self.cam_target_x, self.cam_target_y, self.cam_target_z) = camera_target
+        self.camera_pivot_node.setPos(
+            self.cam_target_x,
+            self.cam_target_y,
+            self.cam_target_z
+        )
         if camera_fov is not None:
             self.camera_fov = camera_fov
-            self.cam.node().getLens().setFov(self.camera_fov)
+        self.cam.node().getLens().setFov(self.camera_fov)
 
         # reorder faces
         self.camera_direction = np.array(self.camera.get_pos(self.render))
         self.reorder_faces_of_all_objects()
+
+    # Get camera direction information
+    def get_camera_view(self):
+        return {
+            'camera_target': (self.cam_target_x, self.cam_target_y, self.cam_target_z),
+            'camera_pos': (self.cam_init_x, self.cam_init_y, self.cam_init_z),
+            'camera_rotation': self.camera_rotation,
+            'camera_fov': self.camera_fov,
+        }
+
+    # Get camera position
+    def get_camera_target_position(self):
+        return np.array(self.camera_pivot_node.getPos())
 
     # Define a procedure to update the camera direction every frame.
     def update_task(self, task):
@@ -364,6 +401,17 @@ class Cerebro_window(ShowBase):
 
         # Continue
         return Task.cont
+
+    # Move camera to a particular distance from center
+    def move_camera_to_distance(self, distance):
+        current_pos = self.camera.getPos()
+        current_distance = np.linalg.norm(current_pos)
+        zoom_factor = distance / current_distance
+        self.camera.setPos(
+            current_pos[0] * np.exp(zoom_factor),
+            current_pos[1] * np.exp(zoom_factor),
+            current_pos[2] * np.exp(zoom_factor),
+        )
 
     # Define a procedure to get a screenshot of the view.
     def get_screenshot(self, output_file):
@@ -684,6 +732,15 @@ class Cerebro_window(ShowBase):
         Args:
             ax (matplotlib.Axes): the axes into which the view will be drawn.
         """
+        # First, update the aspect ration from axis information
+        x, y = self.window_size
+        ax_aspect = ax.get_window_extent().width / ax.get_window_extent().height
+        if (ax_aspect * y) > x:
+            x = int(ax_aspect * y)
+        else:
+            y = int(x / ax_aspect)
+        self.reset_offscreen_size(x, y)
+
         # Create the texture that contain the image buffer
         bgr_tex = core.Texture()
         self.window_buffer.addRenderTexture(bgr_tex, core.GraphicsOutput.RTMCopyRam, core.GraphicsOutput.RTPColor)

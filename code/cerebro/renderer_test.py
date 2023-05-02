@@ -1,23 +1,25 @@
+import os
 import numpy as np
 import nibabel as nib
 
 from . import renderer
 
+main_path = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 
 # basic parameters
 surface = 'inflated_MSMAll'
 expand = 0
 
 # load an example dscalar
-dscalar_file = f'../data/templates/HCP/dscalars/ones.dscalar.nii'
+dscalar_file = f'{main_path}/data/templates/HCP/dscalars/ones.dscalar.nii'
 dscalar = nib.load(dscalar_file)
 
 brain_models = [x for x in dscalar.header.get_index_map(1).brain_models]
 
 # load surfaces for visualization
-left_surface_file = f'../data/templates/HCP/surfaces/S1200.L.{surface}.32k_fs_LR.surf.gii'
+left_surface_file = f'{main_path}/data/templates/HCP/surfaces/S1200.L.{surface}.32k_fs_LR.surf.gii'
 left_surface = nib.load(left_surface_file)
-right_surface_file = f'../data/templates/HCP/surfaces/S1200.R.{surface}.32k_fs_LR.surf.gii'
+right_surface_file = f'{main_path}/data/templates/HCP/surfaces/S1200.R.{surface}.32k_fs_LR.surf.gii'
 right_surface = nib.load(right_surface_file)
 
 # extract surface information
@@ -68,7 +70,7 @@ my_renderer.add_mesh(centered_lrxyz, lrt, arbitrary_colors)
 coordinates = np.array(
     [[80 * np.cos(i / 4), 100 * np.sin(i / 4), 0] for i in range(1, 26)],
 )
-radii = [4 + i / 4 for i in range(1, 26)]
+radii = np.array([4 + i / 4 for i in range(1, 26)])[:, np.newaxis].repeat(3, 1)
 colors = np.array(
     [[0.8 * np.abs(np.cos(i / 8)), 0.8 * np.abs(np.cos((i + 3 * np.pi) / 8)), 0.8 * np.abs(np.cos((i + 6 * np.pi) / 8)), 0.8] for i in range(1, 26)],
 )
@@ -81,7 +83,7 @@ coordinates = np.array(
         [80 * np.cos((i + 1) / 4), 100 * np.sin((i + 1) / 4), 0]
     ] for i in range(1, 26 - 1)],
 )
-radii = np.array([0.1 * (4 + i / 4) for i in range(1, 26 - 1)])[:, np.newaxis].repeat(3, 1)
+radii = np.array([0.1 * (4 + i / 4) for i in range(1, 26 - 1)])
 colors = np.array(
     [[0.8 * np.abs(np.cos(i / 8)), 0.8 * np.abs(np.cos((i + 3 * np.pi) / 8)), 0.8 * np.abs(np.cos((i + 6 * np.pi) / 8)), 0.8] for i in range(1, 26 - 1)],
 )

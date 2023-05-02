@@ -152,3 +152,9 @@ class Renderer_panda3d(Renderer):
         A method to update camera configuration.
         """
         self.window.update_camera(**kwargs)
+
+    def get_view(self, **kwargs):
+        """
+        A method to provide camera configuration.
+        """
+        return self.window.get_camera_view()
