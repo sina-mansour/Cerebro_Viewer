@@ -1,5 +1,4 @@
 {
-    "upload_type": "software",
     "creators": [
         {
             "orcid": "0000-0002-5695-5696",
@@ -13,7 +12,7 @@
     "related_identifiers": [
         {
             "scheme": "url", 
-            "identifier": "https://github.com/sina-mansour/Cerebro_Viewer/tree/v0.0.9", 
+            "identifier": "https://github.com/sina-mansour/Cerebro_Viewer/", 
             "relation": "isSupplementTo"
         },
     ],
