@@ -9,7 +9,9 @@ A pythonic 3D viewer to visualize and plot brains and neuroimaging data
 
 Thanks for choosing Cerebro! We're honored to have you as a user. If you end up using our code in your project or research (which we hope you will!), we'd be grateful if you could give us a little shout-out by including a citation in your publication. This helps us spread the word, motivates us to keep making it better, and gives us warm and fuzzy feelings inside! 😊 Here's the reference you can use:
 
-[![DOI](https://zenodo.org/badge/563673348.svg)](https://zenodo.org/badge/latestdoi/563673348)
+Sina Mansour L. (2023). Cerebro_Viewer A Pythonic 3D viewer to visualize and plot brains (v0.0.9). Zenodo. https://doi.org/10.5281/zenodo.7885669
+
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.7885669.svg)](https://doi.org/10.5281/zenodo.7885669)
 
 Cerebro is a work in progress, and we're excited to share more with you soon! We're currently working on a manuscript that will explain how to use the software in your work. As soon as that's available, we'll let you know so you can cite it in your publication. Thanks for being part of our journey!
 
