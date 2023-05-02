@@ -200,7 +200,7 @@ class Cerebro_brain_viewer():
             # assume equal radii along all directions
             radii = radii[np.newaxis].repeat(3)
         if radii.shape == (coordinates.shape[0],):
-            # assume equal radii for all spheres
+            # assume equal radii along all directions for all spheres
             radii = radii[:, np.newaxis].repeat(3, 1)
         if radii.shape == (3,):
             # assume equal radii for all spheres
@@ -221,6 +221,31 @@ class Cerebro_brain_viewer():
             **kwargs
         }
 
+    def create_cylinders_object(self, object_id, coordinates, radii, color=None, **kwargs):
+        # reformat color
+        color = self.prepare_color(color)
+
+        # reshape radii to expected shape
+        radii = np.array(radii)
+        if radii.shape == ():
+            # assume equal radii along all directions
+            radii = radii[np.newaxis].repeat(coordinates.shape[0])
+
+        return {
+            **{
+                'object_id': object_id,
+                'object_type': 'cylinders',
+                'coordinates': coordinates,
+                'radii': radii,
+                'base_color': color,
+                'layers': {},
+                'visibility': True,
+                'render_update_required': True,
+                'rendered': False,
+            },
+            **kwargs
+        }
+
     def visualize_spheres(self, coordinates, radii, coordinate_offset=0, color=None, **kwargs):
         """
         This function can be used to add arbitrary spheres to the view.
@@ -229,6 +254,28 @@ class Cerebro_brain_viewer():
         unique_id = f'{utils.generate_unique_id()}'
         object_id = f'spheres#{unique_id}'
         self.created_objects[object_id] = self.create_spheres_object(
+            object_id=object_id,
+            coordinates=coordinates,
+            radii=radii,
+            color=color,
+            object_offset_coordinate=coordinate_offset,
+            **kwargs,
+        )
+
+        # draw to update visualization
+        self.draw()
+
+        return self.created_objects[object_id]
+
+    def visualize_cylinders(self, coordinates, radii, coordinate_offset=0, color=None, **kwargs):
+        """
+        This function can be used to add arbitrary cylinders to the view to
+        represent lines connecting pairs of coordinates.
+        """
+        # generate a unique id for the object
+        unique_id = f'{utils.generate_unique_id()}'
+        object_id = f'cylinders#{unique_id}'
+        self.created_objects[object_id] = self.create_cylinders_object(
             object_id=object_id,
             coordinates=coordinates,
             radii=radii,
@@ -620,11 +667,40 @@ class Cerebro_brain_viewer():
         # signal that render was updated
         self.created_objects[object_id]['render_update_required'] = False
 
+    def render_cylinders(self, object_id):
+        # load vertices and triangles
+        cylinders_object = self.created_objects[object_id]
+        coordinates = cylinders_object['coordinates']
+        radii = cylinders_object['radii']
+
+        # apply necessary changes in coordinates by the offset
+        coordinates += cylinders_object.get('object_offset_coordinate', 0)
+
+        # load appropriate render colors
+        colors = self.get_object_render_colors(object_id, coordinates.shape[0])
+
+        # clear existing render
+
+        # render the object
+        cylinders_object['colors'] = colors
+        rendered_cylinders = self.viewer.add_lines(coordinates, radii, colors)
+        cylinders_object['rendered_cylinders'] = rendered_cylinders
+        cylinders_object['rendered'] = True
+
+        # update object boundaries
+        self.min_coordinate = np.min([self.min_coordinate, (coordinates.min(0).min(0) - radii.min())], 0)
+        self.max_coordinate = np.max([self.max_coordinate, (coordinates.max(0).max(0) + radii.max())], 0)
+
+        # signal that render was updated
+        self.created_objects[object_id]['render_update_required'] = False
+
     def render_object(self, object_id):
         if self.created_objects[object_id]['object_type'] == 'surface_mesh':
             self.render_surface_mesh(object_id)
         elif self.created_objects[object_id]['object_type'] == 'spheres':
             self.render_spheres(object_id)
+        elif self.created_objects[object_id]['object_type'] == 'cylinders':
+            self.render_cylinders(object_id)
 
     def center_camera(self, fit=True):
         new_center_coordinate = (self.min_coordinate + self.max_coordinate) / 2
