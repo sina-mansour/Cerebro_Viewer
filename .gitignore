@@ -13,3 +13,6 @@ dist/
 # sublime workspace and project
 cerebro-viewer.sublime-workspace
 cerebro-viewer.sublime-project
+
+# secrets not to be pushed to git
+secrets.txt

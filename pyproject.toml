@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "Cerebro_Viewer"
-version = "0.0.7"
+version = "0.0.8"
 authors = [
   { name="Sina Mansour L.", email="sina.mansour.lakouraj@gmail.com" },
 ]
