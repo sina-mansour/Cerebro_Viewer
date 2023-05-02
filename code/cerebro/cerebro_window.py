@@ -21,6 +21,9 @@ from . import cerebro_utils as utils
 
 
 # configurations
+core.load_prc_file_data('', 'aux-display pandadx9')
+core.load_prc_file_data('', 'aux-display pandadx8')
+core.load_prc_file_data('', 'aux-display p3tinydisplay')
 core.load_prc_file_data('', 'win-size 1280 720')
 # load_prc_file_data('', 'window-title Cerebro Viewer')
 # load_prc_file_data('', 'icon-filename Cerebro_Viewer.ico')
@@ -742,18 +745,18 @@ class Cerebro_window(ShowBase):
         self.reset_offscreen_size(x, y)
 
         # Create the texture that contain the image buffer
-        bgr_tex = core.Texture()
-        self.window_buffer.addRenderTexture(bgr_tex, core.GraphicsOutput.RTMCopyRam, core.GraphicsOutput.RTPColor)
+        bgra_tex = core.Texture()
+        self.window_buffer.addRenderTexture(bgra_tex, core.GraphicsOutput.RTMCopyRam, core.GraphicsOutput.RTPColor)
 
         # Now we can render the frame manually
         self.graphicsEngine.renderFrame()
 
         # Get the frame data as numpy array
-        bgr_img = np.frombuffer(bgr_tex.getRamImage(), dtype=np.uint8)
-        bgr_img.shape = (bgr_tex.getYSize(), bgr_tex.getXSize(), bgr_tex.getNumComponents())
+        bgra_img = np.frombuffer(bgra_tex.getRamImage(), dtype=np.uint8)
+        bgra_img.shape = (bgra_tex.getYSize(), bgra_tex.getXSize(), bgra_tex.getNumComponents())
 
         # invert the channels from bgr to rgb
-        rgb_img = np.flip(bgr_img, axis=2)
+        rgb_img = np.flip(bgra_img[:,:,:3], axis=2)
 
         # plot the image in a matplotlib axes
         ax.imshow(rgb_img, origin='lower')
