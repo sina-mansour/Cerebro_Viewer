@@ -8,5 +8,4 @@
     "license": "MIT License",
     "access_right": "open",
     "title": "Cerebro_Viewer: A Pythonic 3D viewer to visualize and plot brains",
-    "keywords": ["Cerebro", "Visualization", "Neuroimaging", "Connectomics"],
 }
