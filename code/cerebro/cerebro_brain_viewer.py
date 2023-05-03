@@ -291,7 +291,7 @@ class Cerebro_brain_viewer():
 
     def visualize_cifti_space(self, cortical_surface_model_id=None, cifti_template_file=None, volumetric_structures='none',
                               volume_rendering='surface', cifti_expansion_scale=0, cifti_expansion_coeffs=cbu.cifti_expansion_coeffs,
-                              cifti_left_right_seperation=0, **kwargs):
+                              cifti_left_right_seperation=0, volumetric_structure_offset=(0, 0, 0), **kwargs):
         # initialization
         if cortical_surface_model_id is None:
             cortical_surface_model_id = self.default_objects['cortical_surface_model']
@@ -359,7 +359,7 @@ class Cerebro_brain_viewer():
                 coordinates = nib.affines.apply_affine(transformation_matrix, voxels_ijk)
                 voxel_size = nib.affines.voxel_sizes(transformation_matrix)
                 radii = voxel_size[np.newaxis, :].repeat(coordinates.shape[0], 0) / 2
-                coordinate_offset = cifti_expansion_scale * np.array(cifti_expansion_coeffs[brain_structure])
+                coordinate_offset = (cifti_expansion_scale * np.array(cifti_expansion_coeffs[brain_structure])) + np.array(volumetric_structure_offset)
                 if volume_rendering == 'spheres':
                     self.created_objects[object_id] = self.create_spheres_object(
                         object_id=object_id,

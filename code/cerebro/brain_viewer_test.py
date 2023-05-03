@@ -9,7 +9,7 @@ surface = 'pial'
 surface_model = my_brain_viewer.load_template_GIFTI_cortical_surface_models(surface)
 
 # cifti_space = my_brain_viewer.visualize_cifti_space()
-cifti_space = my_brain_viewer.visualize_cifti_space(volumetric_structures='all')
+cifti_space = my_brain_viewer.visualize_cifti_space(volumetric_structures='all', cifti_expansion_scale=20, cifti_left_right_seperation=10, volumetric_structure_offset=(0, 5, -25))
 # cifti_space = my_brain_viewer.visualize_cifti_space(volumetric_structures='subcortex', volume_rendering='spheres_peeled')
 
 # wait = input("Press Enter to continue.")
