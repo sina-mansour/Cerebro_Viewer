@@ -24,6 +24,8 @@ from . import renderer
 from . import cerebro_utils as utils
 from . import cerebro_brain_utils as cbu
 
+# suppress trivial nibabel warnings, see https://github.com/nipy/nibabel/issues/771
+nib.imageglobals.logger.level = 40
 
 class Cerebro_brain_viewer():
     """
