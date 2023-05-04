@@ -21,7 +21,7 @@ dscalar_layer = my_brain_viewer.add_cifti_dscalar_layer(dscalar_file=dscalar_fil
 # wait = input("Press Enter to continue.")
 
 dscalar_file = cbu.get_data_file(f'templates/HCP/dscalars/hcp.gradients.dscalar.nii')
-dscalar_layer = my_brain_viewer.add_cifti_dscalar_layer(dscalar_file=dscalar_file, colormap=plt.cm.Spectral, opacity=0.6)
+dscalar_layer = my_brain_viewer.modify_cifti_dscalar_layer(dscalar_layer, dscalar_file=dscalar_file, colormap=plt.cm.Spectral, opacity=0.6)
 
 
 my_brain_viewer.show()

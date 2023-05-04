@@ -9,6 +9,7 @@ Notes
 Author: Sina Mansour L.
 """
 
+import os
 import numpy as np
 import array
 import trimesh
@@ -24,6 +25,8 @@ from . import cerebro_utils as utils
 core.load_prc_file_data('', 'aux-display pandadx9')
 core.load_prc_file_data('', 'aux-display pandadx8')
 core.load_prc_file_data('', 'aux-display p3tinydisplay')
+# suppressing logs, see https://discourse.panda3d.org/t/how-to-hide-all-console-output/13664/2
+core.load_prc_file_data('', f'notify-output {os.path.dirname(__file__)}/cerebro_window_logs.log')
 core.load_prc_file_data('', 'win-size 1280 720')
 # load_prc_file_data('', 'window-title Cerebro Viewer')
 # load_prc_file_data('', 'icon-filename Cerebro_Viewer.ico')

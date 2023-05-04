@@ -69,6 +69,9 @@ class Cerebro_brain_viewer():
         # Create a dictionary for loaded default objects
         self.default_objects = {}
 
+    def __del__(self):
+        del self.viewer
+
     # Camera view configuration
     def view_to_camera_config(self, view):
         if isinstance(view, str):
@@ -528,6 +531,34 @@ class Cerebro_brain_viewer():
         self.draw()
 
         return created_layer
+
+    # TODO: modify function is not working correctly...
+    # def modify_cifti_dscalar_layer(self, created_layer, dscalar_file=None, loaded_dscalar=None, dscalar_data=None, dscalar_index=0, **kwargs):
+    #     # load the cifti dscalar file
+    #     if dscalar_file is not None:
+    #         dscalar = self.load_file(dscalar_file, nib.load)
+    #         dscalar_data = dscalar.get_fdata()[dscalar_index]
+    #     elif loaded_dscalar is not None:
+    #         dscalar_data = loaded_dscalar.get_fdata()[dscalar_index]
+    #     elif dscalar_data is None:
+    #         raise Exception(f'No dscalar was provided for add_CIFTI_dscalar_layer.')
+
+    #     # convert data to colors
+    #     dscalar_colors = self.data_to_colors(dscalar_data, **kwargs)
+
+    #     # modify layer
+    #     created_layer['dscalar_data'] = dscalar_data
+    #     created_layer['dscalar_colors'] = dscalar_colors
+    #     created_layer['layer_update_required'] = True
+
+    #     # save modified layer
+    #     layer_id = created_layer['layer_id']
+    #     self.created_layers[layer_id] = created_layer
+
+    #     # draw to update visualization
+    #     self.draw()
+
+    #     return created_layer
 
     def update_cifti_dscalar_layer(self, layer_id):
         cifti_space_id = self.created_layers[layer_id]['cifti_space_id']

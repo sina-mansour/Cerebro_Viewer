@@ -91,6 +91,9 @@ class Renderer_panda3d(Renderer):
         # view angle can be provided to renderer
         self.window = Cerebro_window(**kwargs)
 
+    def __del__(self):
+        self.window.destroy()
+
     def add_mesh(self, vertices, triangles, colors):
         """
         A method to add a surface mesh to the rendered objects.
