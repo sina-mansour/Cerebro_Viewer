@@ -19,6 +19,7 @@ Author: Sina Mansour L.
 import matplotlib.pyplot as plt
 import numpy as np
 import nibabel as nib
+import scipy.sparse as sparse
 
 from . import renderer
 from . import cerebro_utils as utils
@@ -251,7 +252,7 @@ class Cerebro_brain_viewer():
             **kwargs
         }
 
-    def visualize_spheres(self, coordinates, radii, coordinate_offset=0, color=None, **kwargs):
+    def visualize_spheres(self, coordinates, radii=1, coordinate_offset=0, color=None, **kwargs):
         """
         This function can be used to add arbitrary spheres to the view.
         """
@@ -272,7 +273,7 @@ class Cerebro_brain_viewer():
 
         return self.created_objects[object_id]
 
-    def visualize_cylinders(self, coordinates, radii, coordinate_offset=0, color=None, **kwargs):
+    def visualize_cylinders(self, coordinates, radii=1, coordinate_offset=0, color=None, **kwargs):
         """
         This function can be used to add arbitrary cylinders to the view to
         represent lines connecting pairs of coordinates.
@@ -293,6 +294,47 @@ class Cerebro_brain_viewer():
         self.draw()
 
         return self.created_objects[object_id]
+
+    def visualize_network(self, adjacency, node_coordinates, node_radii=5, edge_radii=1, node_color=None,
+                          edge_color=None, node_kwargs={}, edge_kwargs={}):
+        """
+        This function can be used to visualize a 3D network with a ball and
+        stick model. Nodes are rendered as spheres, and edges as cylinders.
+        """
+        # Create edge list from adjacency
+        adjacency = sparse.coo_matrix(adjacency)
+        edge_list = np.array([adjacency.row, adjacency.col]).T
+
+        # create nodes and edges
+        nodes = self.visualize_spheres(
+            node_coordinates, radii=node_radii, color=node_color, **node_kwargs
+        )
+        edges = self.visualize_cylinders(
+            node_coordinates[edge_list], radii=edge_radii, color=edge_color, **edge_kwargs
+        )
+
+        # generate a unique id for the object
+        unique_id = f'{utils.generate_unique_id()}'
+        object_id = f'network#{unique_id}'
+
+        # store all visualized objects
+        contained_object_ids = [nodes['object_id'], edges['object_id']]
+
+        # create the network collection object
+        collection_object = {
+            'object_id': object_id,
+            'object_type': 'object_collection',
+            'collection_type': 'network',
+            'contained_object_ids': contained_object_ids,
+            'layers': {},
+        }
+        self.created_objects[object_id] = collection_object
+
+        # draw to update visualization
+        self.draw()
+
+        # return object to user
+        return collection_object
 
     def visualize_cifti_space(self, cortical_surface_model_id=None, cifti_template_file=None, volumetric_structures='none',
                               volume_rendering='surface', cifti_expansion_scale=0, cifti_expansion_coeffs=cbu.cifti_expansion_coeffs,
