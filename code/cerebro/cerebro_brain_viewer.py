@@ -691,7 +691,7 @@ class Cerebro_brain_viewer():
         surface_triangles = surface_mesh_object['triangles']
 
         # apply necessary changes in coordinates by the offset
-        surface_vertices += surface_mesh_object.get('object_offset_coordinate', 0)
+        surface_vertices = surface_vertices + surface_mesh_object.get('object_offset_coordinate', 0)
 
         # load appropriate render colors
         surface_colors = self.get_object_render_colors(object_id, surface_vertices.shape[0])
@@ -722,7 +722,7 @@ class Cerebro_brain_viewer():
         radii = spheres_object['radii']
 
         # apply necessary changes in coordinates by the offset
-        coordinates += spheres_object.get('object_offset_coordinate', 0)
+        coordinates = coordinates + spheres_object.get('object_offset_coordinate', 0)
 
         # load appropriate render colors
         colors = self.get_object_render_colors(object_id, coordinates.shape[0])
@@ -749,7 +749,7 @@ class Cerebro_brain_viewer():
         radii = cylinders_object['radii']
 
         # apply necessary changes in coordinates by the offset
-        coordinates += cylinders_object.get('object_offset_coordinate', 0)
+        coordinates = coordinates + cylinders_object.get('object_offset_coordinate', 0)
 
         # load appropriate render colors
         colors = self.get_object_render_colors(object_id, coordinates.shape[0])
