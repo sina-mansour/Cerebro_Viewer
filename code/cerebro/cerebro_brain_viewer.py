@@ -16,6 +16,8 @@ Notes
 Author: Sina Mansour L.
 """
 
+from __future__ import annotations
+
 import matplotlib.pyplot as plt
 import numpy as np
 import nibabel as nib
@@ -25,22 +27,60 @@ from . import cerebro_utils as utils
 from . import cerebro_brain_utils as cbu
 
 
-class Cerebro_brain_viewer:
-    """
-    Cerebero brain viewer engine
+class Cerebro_brain_viewer():
+    """Cerebero brain viewer engine
 
     This class contains the necessary logical units and input/output handlers
     required to visualize various brain imaging formats in the same viewer
     window.
+
+    Parameters
+    ----------
+    background_color
+        RGBA spec for the background of the rendered brain image.
+    view
+        Description of the rendered viewing angle.
+    null_color
+        RGBA spec for the color of objects without any overlay.
+    no_color
+        RGBA spec for the color of objects that have been masked out.
+    offscreen
+        True if the viewer should be run "headless", i.e. without the live GUI.
+
+    Attributes
+    ----------
+    min_coordinate
+        The minimum coordinate to be rendered.
+    max_coordinate
+        The maximum coordinate to be rendered.
+    center_coordinate
+        The center of the rendered region.
+    renderer_type
+        Unused(?) string describing the renderer.
+    camera_config
+        Dictionary describing the camera configuration based on the view.
+    viewer
+        The actual renderer to be used.
+    created_objects
+        Dictionary storing created objects.
+    created_layers
+        Dictionary storing created layers.
+    loaded_files
+        Cache for loaded files
+    default_objects
+        Dictionary storing the default object of each type.
     """
 
     def __init__(
         self,
-        background_color=(0.1, 0.1, 0.1, 0.0),
-        view="R",
-        null_color=(0.7, 0.7, 0.7, 0.3),
-        no_color=(0.0, 0.0, 0.0, 0.0),
-        offscreen=False,
+        background_color: tuple[float, float, float, float] = (0.1, 0.1, 0.1, 0.0),
+        view: str
+        | tuple[
+            tuple[float, float, float], tuple[float, float, float], float, float
+        ] = "R",
+        null_color: tuple[float, float, float, float] = (0.7, 0.7, 0.7, 0.3),
+        no_color: tuple[float, float, float, float] = (0.0, 0.0, 0.0, 0.0),
+        offscreen: bool = False,
     ):
         # store intializations
         self.background_color = background_color
@@ -97,7 +137,8 @@ class Cerebro_brain_viewer:
             self.camera_pos = (0, 0, -400)
             self.camera_rotation = 90
         else:
-            # Alternatively the user could provide an arbitrary camera config instead of the view
+            # Alternatively the user could provide an arbitrary camera config instead
+            # of the view
             if view[0] is not None:
                 self.camera_pos = view[0]
             if view[1] is not None:
