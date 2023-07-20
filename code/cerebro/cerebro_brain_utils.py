@@ -170,7 +170,7 @@ def get_voxels_depth_mask(
 
 
 def generate_surface_marching_cube(
-    voxels_ijk, transformation_matrix, smoothing=100, simplify=False
+    voxels_ijk, transformation_matrix, smoothing=200, simplify=False
 ):
     # approximate a surface representation with the marching cube algorithm
     I, J, K = np.meshgrid(*[range(x + 3) for x in voxels_ijk.max(0)], indexing="ij")
