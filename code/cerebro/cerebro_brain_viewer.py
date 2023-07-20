@@ -259,12 +259,12 @@ class Cerebro_brain_viewer:
         # get a unique ID
         object_type = "cortical_surface_model"
         object_id = f"{object_type}#{utils.generate_unique_id()}"
-        # load left cortical surface
+        # left cortical surface
         left_vertices, left_triangles = self.load_file(
             left_surface_file, cbu.load_GIFTI_surface
         )
-        # load right cortical surface
-        right_vertices, right_triangles = self.load_file(
+        # right cortical surface
+        right_vertices, right_triangles = self._load_file(
             right_surface_file, cbu.load_GIFTI_surface
         )
 
@@ -815,7 +815,7 @@ class Cerebro_brain_viewer:
     # def modify_cifti_dscalar_layer(self, created_layer, dscalar_file=None, loaded_dscalar=None, dscalar_data=None, dscalar_index=0, **kwargs):
     #     # load the cifti dscalar file
     #     if dscalar_file is not None:
-    #         dscalar = self.load_file(dscalar_file, nib.load)
+    #         dscalar = self._load_file(dscalar_file, nib.load)
     #         dscalar_data = dscalar.get_fdata()[dscalar_index]
     #     elif loaded_dscalar is not None:
     #         dscalar_data = loaded_dscalar.get_fdata()[dscalar_index]
