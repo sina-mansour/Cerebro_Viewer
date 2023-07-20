@@ -3,7 +3,7 @@
 Subcortex surface
 ================
 
-This is a quick demo for how to plot a surface mesh rendering for just the subcortex.
+This is a quick demo for how to plot a surface mesh rendering for just the cortex and subcortex.
 
 Here, we use the template GIFTI data, but you can also use your own GIFTI data. 
 """
@@ -14,7 +14,7 @@ surface_model = my_brain_viewer.load_template_GIFTI_cortical_surface_models(surf
 
 # cifti_space = my_brain_viewer.visualize_cifti_space()
 cifti_space = my_brain_viewer.visualize_cifti_space(
-    volumetric_structures="subcortex", # Change to "none" for just cortex, or "all" for cortex and subcortex
+    volumetric_structures="subcortex", # Change to "none" for just cortex, or "all" for cortex, subcortex, cerebellum, and brainstem
     cifti_expansion_scale=20,
     cifti_left_right_seperation=10,
     volumetric_structure_offset=(0, 5, -25),
