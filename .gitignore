@@ -16,3 +16,6 @@ cerebro-viewer.sublime-project
 
 # secrets not to be pushed to git
 secrets.txt
+
+# log files
+*.log
