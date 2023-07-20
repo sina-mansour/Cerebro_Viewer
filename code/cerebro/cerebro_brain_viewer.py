@@ -21,13 +21,16 @@ from __future__ import annotations
 import matplotlib.pyplot as plt
 import numpy as np
 import nibabel as nib
+import scipy.sparse as sparse
 
 from . import renderer
 from . import cerebro_utils as utils
 from . import cerebro_brain_utils as cbu
 
+# suppress trivial nibabel warnings, see https://github.com/nipy/nibabel/issues/771
+nib.imageglobals.logger.setLevel(40)
 
-class Cerebro_brain_viewer():
+class Cerebro_brain_viewer:
     """Cerebero brain viewer engine
 
     This class contains the necessary logical units and input/output handlers
@@ -114,6 +117,9 @@ class Cerebro_brain_viewer():
 
         # Create a dictionary for loaded default objects
         self.default_objects = {}
+
+    def __del__(self):
+        del self.viewer
 
     # Camera view configuration
     def view_to_camera_config(self, view):
@@ -313,7 +319,7 @@ class Cerebro_brain_viewer():
         }
 
     def visualize_spheres(
-        self, coordinates, radii, coordinate_offset=0, color=None, **kwargs
+        self, coordinates, radii=1, coordinate_offset=0, color=None, **kwargs
     ):
         """
         This function can be used to add arbitrary spheres to the view.
@@ -336,7 +342,7 @@ class Cerebro_brain_viewer():
         return self.created_objects[object_id]
 
     def visualize_cylinders(
-        self, coordinates, radii, coordinate_offset=0, color=None, **kwargs
+        self, coordinates, radii=1, coordinate_offset=0, color=None, **kwargs
     ):
         """
         This function can be used to add arbitrary cylinders to the view to
@@ -359,6 +365,59 @@ class Cerebro_brain_viewer():
 
         return self.created_objects[object_id]
 
+    def visualize_network(
+        self,
+        adjacency,
+        node_coordinates,
+        node_radii=5,
+        edge_radii=1,
+        node_color=None,
+        edge_color=None,
+        node_kwargs={},
+        edge_kwargs={},
+    ):
+        """
+        This function can be used to visualize a 3D network with a ball and
+        stick model. Nodes are rendered as spheres, and edges as cylinders.
+        """
+        # Create edge list from adjacency
+        adjacency = sparse.coo_matrix(adjacency)
+        edge_list = np.array([adjacency.row, adjacency.col]).T
+
+        # create nodes and edges
+        nodes = self.visualize_spheres(
+            node_coordinates, radii=node_radii, color=node_color, **node_kwargs
+        )
+        edges = self.visualize_cylinders(
+            node_coordinates[edge_list],
+            radii=edge_radii,
+            color=edge_color,
+            **edge_kwargs,
+        )
+
+        # generate a unique id for the object
+        unique_id = f"{utils.generate_unique_id()}"
+        object_id = f"network#{unique_id}"
+
+        # store all visualized objects
+        contained_object_ids = [nodes["object_id"], edges["object_id"]]
+
+        # create the network collection object
+        collection_object = {
+            "object_id": object_id,
+            "object_type": "object_collection",
+            "collection_type": "network",
+            "contained_object_ids": contained_object_ids,
+            "layers": {},
+        }
+        self.created_objects[object_id] = collection_object
+
+        # draw to update visualization
+        self.draw()
+
+        # return object to user
+        return collection_object
+
     def visualize_cifti_space(
         self,
         cortical_surface_model_id=None,
@@ -368,6 +427,7 @@ class Cerebro_brain_viewer():
         cifti_expansion_scale=0,
         cifti_expansion_coeffs=cbu.cifti_expansion_coeffs,
         cifti_left_right_seperation=0,
+        volumetric_structure_offset=(0, 0, 0),
         **kwargs,
     ):
         # initialization
@@ -446,9 +506,10 @@ class Cerebro_brain_viewer():
                 )
                 voxel_size = nib.affines.voxel_sizes(transformation_matrix)
                 radii = voxel_size[np.newaxis, :].repeat(coordinates.shape[0], 0) / 2
-                coordinate_offset = cifti_expansion_scale * np.array(
-                    cifti_expansion_coeffs[brain_structure]
-                )
+                coordinate_offset = (
+                    cifti_expansion_scale
+                    * np.array(cifti_expansion_coeffs[brain_structure])
+                ) + np.array(volumetric_structure_offset)
                 if volume_rendering == "spheres":
                     self.created_objects[object_id] = self.create_spheres_object(
                         object_id=object_id,
@@ -650,6 +711,34 @@ class Cerebro_brain_viewer():
 
         return created_layer
 
+    # TODO: modify function is not working correctly...
+    # def modify_cifti_dscalar_layer(self, created_layer, dscalar_file=None, loaded_dscalar=None, dscalar_data=None, dscalar_index=0, **kwargs):
+    #     # load the cifti dscalar file
+    #     if dscalar_file is not None:
+    #         dscalar = self.load_file(dscalar_file, nib.load)
+    #         dscalar_data = dscalar.get_fdata()[dscalar_index]
+    #     elif loaded_dscalar is not None:
+    #         dscalar_data = loaded_dscalar.get_fdata()[dscalar_index]
+    #     elif dscalar_data is None:
+    #         raise Exception(f'No dscalar was provided for add_CIFTI_dscalar_layer.')
+
+    #     # convert data to colors
+    #     dscalar_colors = self.data_to_colors(dscalar_data, **kwargs)
+
+    #     # modify layer
+    #     created_layer['dscalar_data'] = dscalar_data
+    #     created_layer['dscalar_colors'] = dscalar_colors
+    #     created_layer['layer_update_required'] = True
+
+    #     # save modified layer
+    #     layer_id = created_layer['layer_id']
+    #     self.created_layers[layer_id] = created_layer
+
+    #     # draw to update visualization
+    #     self.draw()
+
+    #     return created_layer
+
     def update_cifti_dscalar_layer(self, layer_id):
         cifti_space_id = self.created_layers[layer_id]["cifti_space_id"]
         cifti_space = self.created_objects[cifti_space_id]
@@ -739,7 +828,9 @@ class Cerebro_brain_viewer():
         surface_triangles = surface_mesh_object["triangles"]
 
         # apply necessary changes in coordinates by the offset
-        surface_vertices += surface_mesh_object.get("object_offset_coordinate", 0)
+        surface_vertices = surface_vertices + surface_mesh_object.get(
+            "object_offset_coordinate", 0
+        )
 
         # load appropriate render colors
         surface_colors = self.get_object_render_colors(
@@ -774,7 +865,7 @@ class Cerebro_brain_viewer():
         radii = spheres_object["radii"]
 
         # apply necessary changes in coordinates by the offset
-        coordinates += spheres_object.get("object_offset_coordinate", 0)
+        coordinates = coordinates + spheres_object.get("object_offset_coordinate", 0)
 
         # load appropriate render colors
         colors = self.get_object_render_colors(object_id, coordinates.shape[0])
@@ -805,7 +896,7 @@ class Cerebro_brain_viewer():
         radii = cylinders_object["radii"]
 
         # apply necessary changes in coordinates by the offset
-        coordinates += cylinders_object.get("object_offset_coordinate", 0)
+        coordinates = coordinates + cylinders_object.get("object_offset_coordinate", 0)
 
         # load appropriate render colors
         colors = self.get_object_render_colors(object_id, coordinates.shape[0])
