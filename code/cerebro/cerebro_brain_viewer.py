@@ -100,7 +100,7 @@ class Cerebro_brain_viewer:
 
         # initialize render window
         self.renderer_type = "panda3d"
-        self.camera_config = self.view_to_camera_config(self.view)
+        self.camera_config = self._view_to_camera_config(self.view)
 
         self.viewer = renderer.Renderer_panda3d(
             background_color=background_color, offscreen=offscreen, **self.camera_config
