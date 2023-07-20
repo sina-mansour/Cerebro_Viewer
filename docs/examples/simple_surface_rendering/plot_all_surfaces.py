@@ -1,6 +1,6 @@
 """
 ================
-Cortex and subcortex surface
+Cortex, subcortex, cerebellum, and brainstem surface rendering
 ================
 
 This is a quick demo for how to plot a surface mesh rendering for the cortex, subcortex, cerebellum, and brainstem.

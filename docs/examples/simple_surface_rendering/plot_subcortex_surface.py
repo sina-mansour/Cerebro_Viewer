@@ -1,6 +1,6 @@
 """
 ================
-Subcortex surface
+Cortex and subcortex surface rendering
 ================
 
 This is a quick demo for how to plot a surface mesh rendering for just the cortex and subcortex.
