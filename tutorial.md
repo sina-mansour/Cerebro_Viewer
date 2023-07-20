@@ -55,6 +55,19 @@ Change the view
 my_brain_viewer.change_view('L')
 ```
 
+Add some spherical ROIs
+```
+node_coordinates = [[0,0,0],[25,0,50],[25,25,25]]
+my_brain_viewer.visualize_spheres(node_coordinates, radii=3, color=[0,1,0,0.5])
+```
+
+Add a ball and stick network with same ROIs as above
+```
+node_coordinates = [[0,0,0],[25,0,50],[25,25,25]]
+adjacency = [[0,1,1],[1,0,1],[1,1,0]]
+my_brain_viewer.visualize_network(adjacency,node_coordinates,node_radii=5,edge_radii=1,node_color=[1,0,0,0.5],edge_color=[0,0,1,0.5])
+```
+
 
 ```
 my_brain_viewer.show()

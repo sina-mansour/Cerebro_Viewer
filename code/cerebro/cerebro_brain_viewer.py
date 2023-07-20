@@ -423,7 +423,20 @@ class Cerebro_brain_viewer:
     ):
         """
         This function can be used to add arbitrary spheres to the view.
+        Parameters
+        ----------
+        coordinates
+            3D coordinates of each node, as np.array or list of lists
+        radii
+            radius of ball comprising each node
+        coordinate_offset: 
+            offset to apply to all coordinates
+        color
+            RGBA spec for nodes e.g. [1,0,0,0.5]
         """
+        if type(coordinates)==list:
+            coordinates = np.array(coordinates)
+
         # generate a unique id for the object
         unique_id = f"{utils.generate_unique_id()}"
         object_id = f"spheres#{unique_id}"
@@ -447,7 +460,19 @@ class Cerebro_brain_viewer:
         """
         This function can be used to add arbitrary cylinders to the view to
         represent lines connecting pairs of coordinates.
+        Parameters
+        ----------
+        coordinates
+            3D coordinates of each cylinder's endpoints. Provide numpy array with shape (ncylinders,2,3)
+        radii
+            radius of each cylinder
+        coordinate_offset: 
+            offset to apply to all coordinates
+        color
+            RGBA spec for nodes e.g. [1,0,0,0.5]
         """
+        if type(coordinates)==list:
+            coordinates = np.array(coordinates)
         # generate a unique id for the object
         unique_id = f"{utils.generate_unique_id()}"
         object_id = f"cylinders#{unique_id}"
@@ -476,10 +501,33 @@ class Cerebro_brain_viewer:
         node_kwargs={},
         edge_kwargs={},
     ):
+
         """
         This function can be used to visualize a 3D network with a ball and
         stick model. Nodes are rendered as spheres, and edges as cylinders.
+
+        Parameters
+        ----------
+        adjacency
+            adjacency matrix containing 1s and 0s, as np.array or list of lists
+        node_coordinates
+            3D coordinates of each node, as np.array or list of lists
+        node_radii
+            radius of ball comprising each node
+        edge_radii
+            radius of the cylinder comprising each edge
+        node_color
+            RGBA spec for nodes e.g. [1,0,0,0.5]
+        edge_color
+            RGBA spec for edges
         """
+
+        #if needed, convert list of lists to numpy array
+        if type(adjacency)==list:
+            adjacency = np.array(adjacency)
+        if type(node_coordinates)==list:
+            node_coordinates = np.array(node_coordinates)
+
         # Create edge list from adjacency
         adjacency = sparse.coo_matrix(adjacency)
         edge_list = np.array([adjacency.row, adjacency.col]).T
