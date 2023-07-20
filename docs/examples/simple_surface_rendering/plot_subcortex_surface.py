@@ -1,9 +1,9 @@
 """
 ================
-Plot a simple static surface mesh rendering
+Subcortex surface
 ================
 
-This is a quick demo for how to plot a surface mesh rendering for just the cortex.
+This is a quick demo for how to plot a surface mesh rendering for just the subcortex.
 
 Here, we use the template GIFTI data, but you can also use your own GIFTI data. 
 """

@@ -1,6 +1,6 @@
 """
 ================
-Plot a simple static surface mesh rendering
+Cortex surface
 ================
 
 This is a quick demo for how to plot a surface mesh rendering for just the cortex.
