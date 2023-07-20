@@ -133,7 +133,7 @@ def get_neighbors_normal(voxel: Voxel) -> set[Voxel]:
 
 
 def get_neighbors_strict(voxel: Voxel) -> set[Voxel]:
-    """Return a set containing a voxel's 6 "strict" neighbors plus the voxel itself."""
+    """Return a set containing a voxel's 26 "strict" neighbors plus the voxel itself."""
     i, j, k = voxel[0], voxel[1], voxel[2]
     neighbors = {
         (i + offset_i, j + offset_j, k + offset_k)
