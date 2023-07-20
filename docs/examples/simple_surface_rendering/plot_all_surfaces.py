@@ -7,6 +7,9 @@ This is a quick demo for how to plot a surface mesh rendering for the cortex, su
 
 Here, we use the template GIFTI data, but you can also use your own GIFTI data. 
 """
+import matplotlib.pyplot as plt
+from cerebro import cerebro_brain_utils as cbu
+from cerebro import cerebro_brain_viewer as cbv
 
 my_brain_viewer = cbv.Cerebro_brain_viewer(offscreen=True)
 surface = "pial"
