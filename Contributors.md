@@ -22,4 +22,4 @@ In Brainhack Global 2022 we aim to:
 - Sara, Western Sydney
 - Arush Arun
 - Brooklyn Wright
-
+- Jayson Jeganathan
