@@ -107,20 +107,14 @@ class Renderer_panda3d(Renderer):
         """
         A method to add points (spheres) to the rendered objects.
         """
-        return self.window.create_multiple_sphere_instances(
-            coordinates,
-            radii,
-            colors
-        )
+        return self.window.create_multiple_sphere_instances(coordinates, radii, colors)
 
     def add_lines(self, coordinates, radii, colors):
         """
         A method to add a single point to the rendered objects.
         """
         return self.window.create_multiple_cylinder_instances(
-            coordinates,
-            radii,
-            colors
+            coordinates, radii, colors
         )
 
     def show(self):
