@@ -27,7 +27,7 @@ from . import cerebro_utils as utils
 from . import cerebro_brain_utils as cbu
 
 
-class Cerebro_brain_viewer():
+class Cerebro_brain_viewer:
     """Cerebero brain viewer engine
 
     This class contains the necessary logical units and input/output handlers
@@ -178,17 +178,50 @@ class Cerebro_brain_viewer():
         return camera_config
 
     def load_GIFTI_cortical_surface_models(self, left_surface_file, right_surface_file):
-        # Get a unique ID
+        """
+        Load a GIFTI cortical surface model.
+
+        Loads a GIFTI cortical surface model from two separate GIFTI surface files
+        for the left and right hemispheres. The loaded cortical surface model is
+        stored in the object's internal data structure.
+
+        Args:
+            left_surface_file (str): File path to the GIFTI surface file containing the left hemisphere data.
+            right_surface_file (str): File path to the GIFTI surface file containing the right hemisphere data.
+
+        Returns:
+            dict: A dictionary representing the loaded cortical surface model, with the following keys:
+
+                - 'object_id' (str): A unique identifier for the cortical surface model.
+                - 'object_type' (str): The type of the object, which is 'cortical_surface_model'.
+                - 'left_vertices' (list): A list of 3D coordinates representing the vertices of the left hemisphere surface.
+                - 'left_triangles' (list): A list of triplets representing the triangles of the left hemisphere surface.
+                - 'right_vertices' (list): A list of 3D coordinates representing the vertices of the right hemisphere surface.
+                - 'right_triangles' (list): A list of triplets representing the triangles of the right hemisphere surface.
+
+        Raises:
+            FileNotFoundError: If either 'left_surface_file' or 'right_surface_file' is not found or cannot be accessed.
+            ValueError: If the loaded GIFTI surface files have an incompatible format or structure.
+
+        Example:
+            left_file_path = '/path/to/left_surface.gii'
+            right_file_path = '/path/to/right_surface.gii'
+            surface_model = my_brain_viewer.load_GIFTI_cortical_surface_models(left_file_path, right_file_path)
+
+        """
+        # get a unique ID
         object_type = "cortical_surface_model"
         object_id = f"{object_type}#{utils.generate_unique_id()}"
-        # left ccortical surface
+        # load left cortical surface
         left_vertices, left_triangles = self.load_file(
             left_surface_file, cbu.load_GIFTI_surface
         )
-        # right cortical surface
+        # load right cortical surface
         right_vertices, right_triangles = self.load_file(
             right_surface_file, cbu.load_GIFTI_surface
         )
+
+        # create a dictionary to store the loaded surface model data
         created_object = {
             "object_id": object_id,
             "object_type": object_type,
@@ -206,13 +239,39 @@ class Cerebro_brain_viewer():
         return created_object
 
     def load_template_GIFTI_cortical_surface_models(self, template_surface="inflated"):
+        """
+        Load a GIFTI cortical surface model using a template surface.
+
+        Loads a GIFTI cortical surface model by using a template surface name.
+        It retrieves the file paths of the left and right hemispheres from the template surface.
+        The loaded cortical surface model is then stored in the object's internal data structure.
+
+        Args:
+            template_surface (str, optional): The name of the template surface to use.
+            Defaults to 'inflated'.
+
+        Returns:
+            dict: see load_GIFTI_cortical_surface_models for keys.
+
+        Raises:
+            ValueError: If the provided 'template_surface' is not recognized or not available.
+
+        Example:
+            surface_model = my_brain_viewer.load_template_GIFTI_cortical_surface_models('pial')
+        """
+        # get file paths from template surface name
         (
             left_surface_file,
             right_surface_file,
         ) = cbu.get_left_and_right_GIFTI_template_surface(template_surface)
-        return self.load_GIFTI_cortical_surface_models(
+
+        # load the surface model
+        cortical_surface_model = self.load_GIFTI_cortical_surface_models(
             left_surface_file, right_surface_file
         )
+
+        # return object to user
+        return cortical_surface_model
 
     def load_file(self, file_name, load_func, use_cache=True):
         if use_cache and (file_name in self.loaded_files):
