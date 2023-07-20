@@ -14,24 +14,28 @@ Notes
 Author: Sina Mansour L.
 """
 
+from __future__ import annotations
+
+from itertools import product
 import os
-import matplotlib.pyplot as plt
 import numpy as np
+from numpy.typing import NDArray
 import nibabel as nib
 from skimage import measure
 import trimesh as tm
 from scipy import spatial
-import open3d as o3d
+
+from cerebro_types import Voxel
 
 # Utility template files and directories
 
 
 cerebro_directory = os.path.abspath(os.path.dirname(__file__))
 code_directory = os.path.dirname(cerebro_directory)
-data_directory = os.path.join(code_directory, "data")
+DATA_DIRECTORY = os.path.join(code_directory, "data")
 
 cifti_template_file = os.path.join(
-    data_directory, "templates/HCP/dscalars/ones.dscalar.nii"
+    DATA_DIRECTORY, "templates/HCP/dscalars/ones.dscalar.nii"
 )
 
 
@@ -61,7 +65,8 @@ volumetric_structure_inclusion_dict = {
     "CIFTI_STRUCTURE_THALAMUS_RIGHT": ["all", "subcortex"],
 }
 
-# coefficients of expansions for seperation of subcortical and cerebellar structures in cifti format
+# coefficients of expansions for seperation of subcortical and cerebellar structures in
+# cifti format
 cifti_expansion_coeffs = {
     "CIFTI_STRUCTURE_ACCUMBENS_LEFT": (-0.15, 0.25, -0.5),
     "CIFTI_STRUCTURE_ACCUMBENS_RIGHT": (0.15, 0.25, -0.5),
@@ -88,81 +93,113 @@ cifti_expansion_coeffs = {
 # Utility functions
 
 
-def get_data_file(name):
-    return os.path.join(data_directory, name)
+def get_data_file(name: str) -> str:
+    """Construct the path to a data file from Cerebro's internal data directory."""
+    return os.path.join(DATA_DIRECTORY, name)
 
 
-def get_left_and_right_GIFTI_template_surface(template_surface):
+def get_left_and_right_GIFTI_template_surface(template_surface: str) -> tuple[str, str]:
+    """Return the paths to the left and right GIFTI template surfaces."""
     return (
         get_data_file(
-            f"templates/HCP/surfaces/S1200.L.{template_surface}_MSMAll.32k_fs_LR.surf.gii"
+            "templates/HCP/surfaces/"
+            f"S1200.L.{template_surface}_MSMAll.32k_fs_LR.surf.gii"
         ),
         get_data_file(
-            f"templates/HCP/surfaces/S1200.R.{template_surface}_MSMAll.32k_fs_LR.surf.gii"
+            "templates/HCP/surfaces/"
+            f"S1200.R.{template_surface}_MSMAll.32k_fs_LR.surf.gii"
         ),
     )
 
 
-def load_GIFTI_surface(surface_file):
-    # left ccortical surface
+def load_GIFTI_surface(surface_file: str) -> tuple[NDArray, NDArray]:
+    """Read the vertices and triangles representing a GIfTI surface."""
+    # left cortical surface
     surface = nib.load(surface_file)
     vertices = surface.darrays[0].data
     triangles = surface.darrays[1].data
     return vertices, triangles
 
 
+def get_neighbors_normal(voxel: Voxel) -> set[Voxel]:
+    """Return a set containing a voxel's 6 "normal" neighbors plus the voxel itself."""
+    i, j, k = voxel[0], voxel[1], voxel[2]
+    neighbors = set()
+    for offset in [-1, 0, 1]:
+        neighbors.add((i + offset, j, k))
+        neighbors.add((i, j + offset, k))
+        neighbors.add((i, j, k + offset))
+    return neighbors
+
+
+def get_neighbors_strict(voxel: Voxel) -> set[Voxel]:
+    """Return a set containing a voxel's 6 "strict" neighbors plus the voxel itself."""
+    i, j, k = voxel[0], voxel[1], voxel[2]
+    neighbors = {
+        (i + offset_i, j + offset_j, k + offset_k)
+        for offset_i, offset_j, offset_k in product([-1, 0, 1], repeat=3)
+    }
+    return neighbors
+
+
 def get_voxels_depth_mask(
-    voxels_ijk,
-    neighbor_rule="normal",
-    peel_threshold=1,
-    peel_neighbor_rule="normal",
-    peel_depth=[0],
+    voxels_ijk: NDArray,
+    neighbor_rule: str = "normal",
+    peel_threshold: float = 1,
+    peel_depth: list[int] = [0],
 ):
+    """Peel a volumetric structure to reveal voxels at a given depth.
+
+    Given the voxels corresponding to a volumetric structure, return only those that
+    are at the given peel depth(s).
+
+    Parameters
+    ----------
+    voxels_ijk
+        n * 3 array representing the voxels that compose the volumetric structure.
+    neighbor_rule
+        Either "strict" or "normal", describing what's considered a neighbor.
+    peel_threshold
+        The proportion of the total possible neighbours that need to be in the structure
+        for a voxel to be considered below the outside layer. Should be 1 or less.
+    peel_depth
+        The depths (layer indices) to keep in the output mask.
+    """
     # store voxel information in proper data structures
     voxels_i, voxels_j, voxels_k = voxels_ijk[:, 0], voxels_ijk[:, 1], voxels_ijk[:, 2]
-    voxels = set()
-    voxel_indices = {}
-    all_neighbors = []
-    for idx in range(voxels_ijk.shape[0]):
-        i = voxels_i[idx]
-        j = voxels_j[idx]
-        k = voxels_k[idx]
-        voxels.add((i, j, k))
-        voxel_indices[(i, j, k)] = idx
-        neighbors = set()
+    voxels: set[Voxel] = set()
+    voxel_indices: dict[Voxel, int] = {}
+    all_neighbors: list[set[Voxel]] = []
+
+    # Generate a list of every neighbour of every voxel in voxels_ijk
+    for idx, voxel in enumerate(zip(voxels_i, voxels_j, voxels_k)):
+        voxels.add(voxel)
+        voxel_indices[voxel] = idx
         # strict neighbors: 26
         if neighbor_rule == "strict":
             max_neighbors = 27
-            for ni in [-1, 0, 1]:
-                for nj in [-1, 0, 1]:
-                    for nk in [-1, 0, 1]:
-                        neighbors.add((i + ni, j + nj, k + nk))
+            all_neighbors.append(get_neighbors_strict(voxel))
         # normal neighbors: 6
         elif neighbor_rule == "normal":
             max_neighbors = 7
-            for ni in [-1, 0, 1]:
-                neighbors.add((i + ni, j, k))
-            for nj in [-1, 0, 1]:
-                neighbors.add((i, j + nj, k))
-            for nk in [-1, 0, 1]:
-                neighbors.add((i, j, k + nk))
-        all_neighbors.append(neighbors)
+            all_neighbors.append(get_neighbors_normal(voxel))
+
     # now compute depth O(n^3/2)
     depths = np.zeros(voxels_ijk.shape[0])
     current_depth = 0
-    while len(voxels) > 0:
+    while voxels:
         removed_voxels = set()
         for voxel in voxels:
             idx = voxel_indices[voxel]
-            # if not all_neighbors[idx].issubset(voxels):
+
+            # If few enough of this voxel's neighbors are within the structure, we
+            # assume that it's on the current outside layer
             if len(all_neighbors[idx].intersection(voxels)) < (
                 peel_threshold * max_neighbors
             ):
                 depths[idx] = current_depth
-                i = voxels_i[idx]
-                j = voxels_j[idx]
-                k = voxels_k[idx]
-                removed_voxels.add((i, j, k))
+                removed_voxels.add(voxel)
+        # Peel off the voxels we just identified as being on the current outside layer
         voxels = voxels.difference(removed_voxels)
         current_depth += 1
 
@@ -170,9 +207,26 @@ def get_voxels_depth_mask(
 
 
 def generate_surface_marching_cube(
-    voxels_ijk, transformation_matrix, smoothing=100, simplify=False
+    voxels_ijk: NDArray,
+    transformation_matrix: NDArray,
+    smoothing: int | None = 100,
+    simplify: bool = False,
 ):
-    # approximate a surface representation with the marching cube algorithm
+    """Approximate a surface mesh representation of a volumetric structure.
+
+    This uses the marching cube algorithm.
+
+    Parameters
+    ----------
+    voxels_ijk
+        Voxels composing the volumetric structure.
+    transformation_matrix
+        Matrix representing an affine transformation to apply to the generated vertices.
+    smoothing
+        Iterations of the smoothing algorithm to run, or None to skip smoothing.
+    simplify
+        If true, simplify the generated mesh with quadratic decimation.
+    """
     I, J, K = np.meshgrid(*[range(x + 3) for x in voxels_ijk.max(0)], indexing="ij")
     D = I * 0
     for i in range(voxels_ijk.shape[0]):
@@ -184,7 +238,7 @@ def generate_surface_marching_cube(
     tmesh = tm.Trimesh(vertices=verts_xyz, faces=faces)
 
     # smooth and remesh the generated marching cube surface
-    if smoothing is not None:
+    if smoothing:
         # tm.smoothing.filter_taubin(tmesh, iterations=smoothing,)
         new_vertices, new_faces = tm.remesh.subdivide(
             vertices=tmesh.vertices, faces=tmesh.faces
@@ -203,8 +257,10 @@ def generate_surface_marching_cube(
     return tmesh.vertices, tmesh.faces
 
 
-def get_nearest_neighbors(reference_coordinates, query_coordinates):
-    # find nearest neighbors of every vertex
+def get_nearest_neighbors(
+    reference_coordinates: NDArray, query_coordinates: NDArray
+) -> tuple[NDArray, NDArray]:
+    """Find the nearest neighbors of every vertex."""
     kdtree = spatial.cKDTree(reference_coordinates)
     nearest_distances, nearest_indices = kdtree.query(query_coordinates)
 
