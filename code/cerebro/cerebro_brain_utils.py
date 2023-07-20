@@ -209,7 +209,7 @@ def get_voxels_depth_mask(
 def generate_surface_marching_cube(
     voxels_ijk: NDArray,
     transformation_matrix: NDArray,
-    smoothing: int | None = 100,
+    smoothing: int | None = 200,
     simplify: bool = False,
 ):
     """Approximate a surface mesh representation of a volumetric structure.

@@ -21,13 +21,16 @@ from __future__ import annotations
 import matplotlib.pyplot as plt
 import numpy as np
 import nibabel as nib
+import scipy.sparse as sparse
 
 from . import renderer
 from . import cerebro_utils as utils
 from . import cerebro_brain_utils as cbu
 
+# suppress trivial nibabel warnings, see https://github.com/nipy/nibabel/issues/771
+nib.imageglobals.logger.setLevel(40)
 
-class Cerebro_brain_viewer():
+class Cerebro_brain_viewer:
     """Cerebero brain viewer engine
 
     This class contains the necessary logical units and input/output handlers
@@ -115,8 +118,11 @@ class Cerebro_brain_viewer():
         # Create a dictionary for loaded default objects
         self.default_objects = {}
 
+    def __del__(self):
+        del self.viewer
+
     # Camera view configuration
-    def view_to_camera_config(self, view):
+    def _view_to_camera_config(self, view):
         if isinstance(view, str):
             self.camera_target = self.center_coordinate
             self.camera_fov = 25
@@ -155,14 +161,7 @@ class Cerebro_brain_viewer():
             "camera_rotation": self.camera_rotation,
         }
 
-    def change_view(self, view, fit=False):
-        self.view = view
-        self.camera_config = self.view_to_camera_config(self.view)
-        if fit:
-            self.camera_config = self.zoom_camera_to_content(self.camera_config)
-        self.viewer.change_view(**self.camera_config)
-
-    def zoom_camera_to_content(self, camera_config):
+    def _zoom_camera_to_content(self, camera_config):
         coverage_radius = (self.max_coordinate - self.min_coordinate) / 2
         if np.isnan(coverage_radius).any():
             return camera_config
@@ -176,6 +175,54 @@ class Cerebro_brain_viewer():
             [x * zoom_factor for x in camera_config["camera_pos"]]
         )
         return camera_config
+
+    def change_view(self, view, fit=False):
+        """ Specify the viewing angle of the brain.
+        This method can be used to change the viewing angle of the brain using 
+        pre-configured angle options or custom viewing options.
+
+        Parameters
+        ----------
+        self
+        The Cerebro_brain_viewer object.
+
+        view
+        Description of the rendered viewing angle. Pre-configured options include: 
+            "R" or "Right" for right hemisphere lateral view
+            "L" or "Left" for left hemisphere lateral view
+            "A" or "Anterior" for anterior view
+            "P" or "Posterior" for posterior view
+            "S" or "Superior" for superior view
+            "I" or "Inferior" for inferior view
+        Alternatively, you may provide a tuple of the form (camera_pos, camera_target, 
+        camera_fov, camera_rotation) to specify the camera configuration directly.
+        
+        fit
+        If True, the camera will be zoomed to fit the content of the scene.
+        """
+
+        self.view = view
+        self.camera_config = self._view_to_camera_config(self.view)
+        if fit:
+            self.camera_config = self._zoom_camera_to_content(self.camera_config)
+        self.viewer.change_view(**self.camera_config)
+
+    def center_camera(self, fit=True):
+        """ Center the camera on the brain.
+        This method can be used to center the camera on the brain.
+
+        Parameters
+        ----------
+        self
+        The Cerebro_brain_viewer object.
+
+        fit
+        If True, the camera will be zoomed to fit the brain.
+        """
+        new_center_coordinate = (self.min_coordinate + self.max_coordinate) / 2
+        if (self.center_coordinate != new_center_coordinate).any():
+            self.center_coordinate = new_center_coordinate
+            self.change_view((None, self.center_coordinate, None, None), fit=fit)
 
     def load_GIFTI_cortical_surface_models(self, left_surface_file, right_surface_file):
         # Get a unique ID
@@ -214,7 +261,7 @@ class Cerebro_brain_viewer():
             left_surface_file, right_surface_file
         )
 
-    def load_file(self, file_name, load_func, use_cache=True):
+    def _load_file(self, file_name, load_func, use_cache=True):
         if use_cache and (file_name in self.loaded_files):
             return self.loaded_files[file_name]
         else:
@@ -222,7 +269,7 @@ class Cerebro_brain_viewer():
             self.loaded_files[file_name] = loaded_file
             return loaded_file
 
-    def prepare_color(self, color):
+    def _prepare_color(self, color):
         # prepare the color to the right format
         # set a base color if not specified
         if color is None:
@@ -235,7 +282,7 @@ class Cerebro_brain_viewer():
         self, object_id, vertices, triangles, color=None, **kwargs
     ):
         # reformat color
-        color = self.prepare_color(color)
+        color = self._prepare_color(color)
 
         return {
             **{
@@ -256,7 +303,7 @@ class Cerebro_brain_viewer():
         self, object_id, coordinates, radii, color=None, **kwargs
     ):
         # reformat color
-        color = self.prepare_color(color)
+        color = self._prepare_color(color)
 
         # reshape radii to expected shape
         radii = np.array(radii)
@@ -289,7 +336,7 @@ class Cerebro_brain_viewer():
         self, object_id, coordinates, radii, color=None, **kwargs
     ):
         # reformat color
-        color = self.prepare_color(color)
+        color = self._prepare_color(color)
 
         # reshape radii to expected shape
         radii = np.array(radii)
@@ -313,7 +360,7 @@ class Cerebro_brain_viewer():
         }
 
     def visualize_spheres(
-        self, coordinates, radii, coordinate_offset=0, color=None, **kwargs
+        self, coordinates, radii=1, coordinate_offset=0, color=None, **kwargs
     ):
         """
         This function can be used to add arbitrary spheres to the view.
@@ -336,7 +383,7 @@ class Cerebro_brain_viewer():
         return self.created_objects[object_id]
 
     def visualize_cylinders(
-        self, coordinates, radii, coordinate_offset=0, color=None, **kwargs
+        self, coordinates, radii=1, coordinate_offset=0, color=None, **kwargs
     ):
         """
         This function can be used to add arbitrary cylinders to the view to
@@ -359,6 +406,59 @@ class Cerebro_brain_viewer():
 
         return self.created_objects[object_id]
 
+    def visualize_network(
+        self,
+        adjacency,
+        node_coordinates,
+        node_radii=5,
+        edge_radii=1,
+        node_color=None,
+        edge_color=None,
+        node_kwargs={},
+        edge_kwargs={},
+    ):
+        """
+        This function can be used to visualize a 3D network with a ball and
+        stick model. Nodes are rendered as spheres, and edges as cylinders.
+        """
+        # Create edge list from adjacency
+        adjacency = sparse.coo_matrix(adjacency)
+        edge_list = np.array([adjacency.row, adjacency.col]).T
+
+        # create nodes and edges
+        nodes = self.visualize_spheres(
+            node_coordinates, radii=node_radii, color=node_color, **node_kwargs
+        )
+        edges = self.visualize_cylinders(
+            node_coordinates[edge_list],
+            radii=edge_radii,
+            color=edge_color,
+            **edge_kwargs,
+        )
+
+        # generate a unique id for the object
+        unique_id = f"{utils.generate_unique_id()}"
+        object_id = f"network#{unique_id}"
+
+        # store all visualized objects
+        contained_object_ids = [nodes["object_id"], edges["object_id"]]
+
+        # create the network collection object
+        collection_object = {
+            "object_id": object_id,
+            "object_type": "object_collection",
+            "collection_type": "network",
+            "contained_object_ids": contained_object_ids,
+            "layers": {},
+        }
+        self.created_objects[object_id] = collection_object
+
+        # draw to update visualization
+        self.draw()
+
+        # return object to user
+        return collection_object
+
     def visualize_cifti_space(
         self,
         cortical_surface_model_id=None,
@@ -368,6 +468,7 @@ class Cerebro_brain_viewer():
         cifti_expansion_scale=0,
         cifti_expansion_coeffs=cbu.cifti_expansion_coeffs,
         cifti_left_right_seperation=0,
+        volumetric_structure_offset=(0, 0, 0),
         **kwargs,
     ):
         # initialization
@@ -378,7 +479,7 @@ class Cerebro_brain_viewer():
             cifti_template_file = cbu.cifti_template_file
 
         # load the template cifti
-        cifti_template = self.load_file(cifti_template_file, nib.load)
+        cifti_template = self._load_file(cifti_template_file, nib.load)
         brain_models = [x for x in cifti_template.header.get_index_map(1).brain_models]
         brain_structures = [x.brain_structure for x in brain_models]
 
@@ -396,7 +497,7 @@ class Cerebro_brain_viewer():
         object_id = f"{brain_structure}#{unique_id}"
         contained_object_ids.append(object_id)
         coordinate_offset = np.array([(-cifti_left_right_seperation / 2), 0, 0])
-        self.created_objects[object_id] = self.create_surface_mesh_object(
+        self.created_objects[object_id] = self._create_surface_mesh_object(
             object_id=object_id,
             vertices=self.created_objects[cortical_surface_model_id]["left_vertices"],
             triangles=self.created_objects[cortical_surface_model_id]["left_triangles"],
@@ -414,7 +515,7 @@ class Cerebro_brain_viewer():
         object_id = f"{brain_structure}#{unique_id}"
         contained_object_ids.append(object_id)
         coordinate_offset = np.array([(cifti_left_right_seperation / 2), 0, 0])
-        self.created_objects[object_id] = self.create_surface_mesh_object(
+        self.created_objects[object_id] = self._create_surface_mesh_object(
             object_id=object_id,
             vertices=self.created_objects[cortical_surface_model_id]["right_vertices"],
             triangles=self.created_objects[cortical_surface_model_id][
@@ -446,9 +547,10 @@ class Cerebro_brain_viewer():
                 )
                 voxel_size = nib.affines.voxel_sizes(transformation_matrix)
                 radii = voxel_size[np.newaxis, :].repeat(coordinates.shape[0], 0) / 2
-                coordinate_offset = cifti_expansion_scale * np.array(
-                    cifti_expansion_coeffs[brain_structure]
-                )
+                coordinate_offset = (
+                    cifti_expansion_scale
+                    * np.array(cifti_expansion_coeffs[brain_structure])
+                ) + np.array(volumetric_structure_offset)
                 if volume_rendering == "spheres":
                     self.created_objects[object_id] = self.create_spheres_object(
                         object_id=object_id,
@@ -617,7 +719,7 @@ class Cerebro_brain_viewer():
 
         # load the cifti dscalar file
         if dscalar_file is not None:
-            dscalar = self.load_file(dscalar_file, nib.load)
+            dscalar = self._load_file(dscalar_file, nib.load)
             dscalar_data = dscalar.get_fdata()[dscalar_index]
         elif loaded_dscalar is not None:
             dscalar_data = loaded_dscalar.get_fdata()[dscalar_index]
@@ -649,6 +751,34 @@ class Cerebro_brain_viewer():
         self.draw()
 
         return created_layer
+
+    # TODO: modify function is not working correctly...
+    # def modify_cifti_dscalar_layer(self, created_layer, dscalar_file=None, loaded_dscalar=None, dscalar_data=None, dscalar_index=0, **kwargs):
+    #     # load the cifti dscalar file
+    #     if dscalar_file is not None:
+    #         dscalar = self.load_file(dscalar_file, nib.load)
+    #         dscalar_data = dscalar.get_fdata()[dscalar_index]
+    #     elif loaded_dscalar is not None:
+    #         dscalar_data = loaded_dscalar.get_fdata()[dscalar_index]
+    #     elif dscalar_data is None:
+    #         raise Exception(f'No dscalar was provided for add_CIFTI_dscalar_layer.')
+
+    #     # convert data to colors
+    #     dscalar_colors = self.data_to_colors(dscalar_data, **kwargs)
+
+    #     # modify layer
+    #     created_layer['dscalar_data'] = dscalar_data
+    #     created_layer['dscalar_colors'] = dscalar_colors
+    #     created_layer['layer_update_required'] = True
+
+    #     # save modified layer
+    #     layer_id = created_layer['layer_id']
+    #     self.created_layers[layer_id] = created_layer
+
+    #     # draw to update visualization
+    #     self.draw()
+
+    #     return created_layer
 
     def update_cifti_dscalar_layer(self, layer_id):
         cifti_space_id = self.created_layers[layer_id]["cifti_space_id"]
@@ -739,7 +869,9 @@ class Cerebro_brain_viewer():
         surface_triangles = surface_mesh_object["triangles"]
 
         # apply necessary changes in coordinates by the offset
-        surface_vertices += surface_mesh_object.get("object_offset_coordinate", 0)
+        surface_vertices = surface_vertices + surface_mesh_object.get(
+            "object_offset_coordinate", 0
+        )
 
         # load appropriate render colors
         surface_colors = self.get_object_render_colors(
@@ -774,7 +906,7 @@ class Cerebro_brain_viewer():
         radii = spheres_object["radii"]
 
         # apply necessary changes in coordinates by the offset
-        coordinates += spheres_object.get("object_offset_coordinate", 0)
+        coordinates = coordinates + spheres_object.get("object_offset_coordinate", 0)
 
         # load appropriate render colors
         colors = self.get_object_render_colors(object_id, coordinates.shape[0])
@@ -805,7 +937,7 @@ class Cerebro_brain_viewer():
         radii = cylinders_object["radii"]
 
         # apply necessary changes in coordinates by the offset
-        coordinates += cylinders_object.get("object_offset_coordinate", 0)
+        coordinates = coordinates + cylinders_object.get("object_offset_coordinate", 0)
 
         # load appropriate render colors
         colors = self.get_object_render_colors(object_id, coordinates.shape[0])
@@ -837,11 +969,6 @@ class Cerebro_brain_viewer():
         elif self.created_objects[object_id]["object_type"] == "cylinders":
             self.render_cylinders(object_id)
 
-    def center_camera(self, fit=True):
-        new_center_coordinate = (self.min_coordinate + self.max_coordinate) / 2
-        if (self.center_coordinate != new_center_coordinate).any():
-            self.center_coordinate = new_center_coordinate
-            self.change_view((None, self.center_coordinate, None, None), fit=fit)
 
     def render_update(self):
         for object_id in self.created_objects:
