@@ -9,6 +9,7 @@ Notes
 Author: Sina Mansour L.
 """
 
+import os
 import numpy as np
 import array
 import trimesh
@@ -24,6 +25,10 @@ from . import cerebro_utils as utils
 core.load_prc_file_data("", "aux-display pandadx9")
 core.load_prc_file_data("", "aux-display pandadx8")
 core.load_prc_file_data("", "aux-display p3tinydisplay")
+# suppressing logs, see https://discourse.panda3d.org/t/how-to-hide-all-console-output/13664/2
+core.load_prc_file_data(
+    "", f"notify-output {os.path.dirname(__file__)}/cerebro_window_logs.log"
+)
 core.load_prc_file_data("", "win-size 1280 720")
 # load_prc_file_data('', 'window-title Cerebro Viewer')
 # load_prc_file_data('', 'icon-filename Cerebro_Viewer.ico')
@@ -71,6 +76,9 @@ class Cerebro_window(ShowBase):
         self.zoom_speed = zoom_speed
 
         # Setup procedures
+
+        # Material setup
+        self.setup_materials()
 
         # Camera setup
         self.setup_camera()
@@ -253,6 +261,20 @@ class Cerebro_window(ShowBase):
     def update_key_map(self, key, state):
         self.key_map[key] = state
 
+    # Material setup procedure
+    def setup_materials(self):
+        self.materials = {}
+        self.materials[1] = core.Material("StandardMaterial")
+        # self.materials[1].setDiffuse((1., 1., 1., 1.)) # Replaces actual color
+        # self.materials[1].setAmbient((1., 1., 1., 1.)) # Creates a paler material
+        self.materials[1].setEmission(
+            (0.1, 0.1, 0.1, 0.1)
+        )  # Higher values are brighter
+        self.materials[1].setSpecular(
+            (0.2, 0.2, 0.2, 0.2)
+        )  # Higher values are more glossy
+        self.materials[1].setShininess(10)
+
     # Camera setup procedure
     def setup_camera(self):
         # Create a camera pivot node at the center + two other pivot nodes to do rotation along other axes
@@ -294,6 +316,37 @@ class Cerebro_window(ShowBase):
         self.cam.node().getLens().setFov(self.camera_fov)
         # self.camera_direction = np.array(self.camera.get_quat())[1:]
         self.camera_direction = np.array(self.camera.get_pos(self.render))
+
+        # Add lighting at the position of the camera
+        # Fixed background ambient lighting
+        self.alight = core.AmbientLight("alight")
+        self.alight.setColor((0.3, 0.3, 0.3, 1))
+        self.alnp = self.render.attachNewNode(self.alight)
+        self.render.setLight(self.alnp)
+
+        # # A dummy sphere for camera and light position
+        # self.slight = self.loader.loadModel('models/misc/sphere')
+        # self.slight.setMaterial(self.materials[1])
+        # self.slight.setPos(0, 200, 0)
+        # self.slight.setScale(1, 1, 1)
+        # self.slight.reparentTo(self.cam)
+
+        # Directional light according to camera
+        self.dlight = core.DirectionalLight("dlight")
+        self.dlight.setColor((0.7, 0.7, 0.7, 1))
+        self.dlnp = core.NodePath(self.dlight)
+        self.render.setLight(self.dlnp)
+        self.dlnp.reparentTo(self.cam)
+        self.dlnp.lookAt(self.cam_target_x, self.cam_target_y, self.cam_target_z)
+
+        # # Point light from camera
+        # self.plight = core.PointLight('plight')
+        # self.plight.setColor((0.9, 0.9, 0.9, 1))
+        # self.plight.setAttenuation((1, 0, 1))
+        # self.plnp = core.NodePath(self.plight)
+        # self.plnp.setPos(0, 100, 0)
+        # self.render.setLight(self.plnp)
+        # self.plnp.reparentTo(self.cam)
 
     # Update camera direction
     def update_camera(
@@ -463,6 +516,14 @@ class Cerebro_window(ShowBase):
         self.mouse_x_previous = self.mouse_x
         self.mouse_y_previous = self.mouse_y
 
+        #
+        # if (ud_rotation != 0) or (rl_position != 0) or (rl_rotation != 0) or (ud_position != 0) or (camera_rotation != 0) or (zoom_factor != 0):
+        #     print("-"*80)
+        #     print("Camera pos", self.cam.getPos(self.render))
+        #     print("Camera dir", self.cam.getHpr(self.render))
+        #     print("Light pos", self.dlnp.getPos(self.render))
+        #     print("Light dir", self.dlnp.getHpr(self.render))
+
         # Continue
         return Task.cont
 
@@ -486,27 +547,62 @@ class Cerebro_window(ShowBase):
         # reorder triangles according to a direction vector
         return triangles[np.argsort(vertices[triangles].mean(1).dot(direction))]
 
+    # Define a function to compute surface normals of vertices
+    def compute_vertex_normals(self, vertices, triangles):
+        # Compute surface normals for each triangle
+        tri_normals = np.cross(
+            vertices[triangles[:, 1]] - vertices[triangles[:, 0]],
+            vertices[triangles[:, 2]] - vertices[triangles[:, 0]],
+        )
+        tri_normals = tri_normals / np.linalg.norm(tri_normals, axis=1)[:, None]
+
+        # Initialize vertex normals to zero
+        vertex_normals = np.zeros(vertices.shape, dtype=vertices.dtype)
+
+        # Assign triangle normals to their vertices
+        vertex_normals[triangles[:, 0]] += tri_normals
+        vertex_normals[triangles[:, 1]] += tri_normals
+        vertex_normals[triangles[:, 2]] += tri_normals
+
+        # Normalize vertex normals
+        vertex_normals = vertex_normals / np.maximum(
+            np.linalg.norm(vertex_normals, axis=1)[:, None], 1e-6
+        )
+
+        return vertex_normals
+
     # Define a function to create a node object for a surface mesh
     def create_surface_mesh_node(
         self, vertices, triangles, node_name, vertex_colors=None, direction=None
     ):
         # convert information into array format
-        coords = array.array("f", vertices.reshape(-1))
+        # vertex coordinates
+        coords = array.array("f", vertices.ravel())
+        # vertex normals
+        vertex_normals = array.array(
+            "f", self.compute_vertex_normals(vertices, triangles).ravel()
+        )
+        # vertex colors
         if vertex_colors is not None:
-            colors = array.array(
-                "B", (255 * vertex_colors.reshape(-1)).astype(np.uint8)
-            )
+            colors = array.array("B", (255 * vertex_colors.ravel()).astype(np.uint8))
+        # faces sorted by direction
         if direction is None:
-            faces_array = array.array("I", triangles.reshape(-1))
+            faces_array = array.array("I", triangles.ravel())
         else:
             faces_array = array.array(
-                "I", self.sort_faces(direction, triangles, vertices).reshape(-1)
+                "I", self.sort_faces(direction, triangles, vertices).ravel()
             )
 
         # specify a generic vertex format
         vertex_format = core.GeomVertexFormat()
         # add 3d coordinates to the format
         vertex_format.add_array(core.GeomVertexFormat.get_v3().arrays[0])
+        # add surface normal information
+        vertex_format.add_array(
+            core.GeomVertexArrayFormat(
+                "normal", 3, core.Geom.NT_float32, core.Geom.C_normal
+            )
+        )
         # add color information to the format if requested
         if vertex_colors is not None:
             vertex_format.add_array(
@@ -528,8 +624,11 @@ class Cerebro_window(ShowBase):
         vertex_array = vertex_data.modify_array(0)
         vertex_memview = memoryview(vertex_array).cast("B").cast("f")
         vertex_memview[:] = coords
+        normal_array = vertex_data.modify_array(1)
+        normal_memview = memoryview(normal_array).cast("B").cast("f")
+        normal_memview[:] = vertex_normals
         if vertex_colors is not None:
-            color_array = vertex_data.modify_array(1)
+            color_array = vertex_data.modify_array(2)
             color_memview = memoryview(color_array).cast("B")
             color_memview[:] = colors
 
@@ -561,10 +660,13 @@ class Cerebro_window(ShowBase):
         else:
             node_path.setTransparency(False)
 
-    # Define a function to prepared a two-sided transparent node path
+    # Define a function to prepare a two-sided transparent node path
     def prepare_node_path(self, node_path, transparent=True, visualize=True):
         # Add transparency to node path
         self.apply_transparency_to_node_path(node_path, transparent=transparent)
+
+        # Assign a material to the node_path
+        node_path.setMaterial(self.materials[1])
 
         # Add lighting
         # Default lighting can be used for simplicity
