@@ -260,7 +260,7 @@ class Cerebro_brain_viewer:
         object_type = "cortical_surface_model"
         object_id = f"{object_type}#{utils.generate_unique_id()}"
         # left cortical surface
-        left_vertices, left_triangles = self.load_file(
+        left_vertices, left_triangles = self._load_file(
             left_surface_file, cbu.load_GIFTI_surface
         )
         # right cortical surface
