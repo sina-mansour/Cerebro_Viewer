@@ -21,7 +21,6 @@ surface_model = cortex_viewer.load_template_GIFTI_cortical_surface_models(surfac
 cifti_space = cortex_viewer.visualize_cifti_space(
     volumetric_structures="none", # Change to "none" for just cortex, or "subcortex" for just cortex and subcortex
 )
-cortex_viewer._zoom_camera_to_content()
 
 fig, ax = plt.subplots(figsize=(10,10))
 ax.axis('off')
@@ -43,8 +42,6 @@ cifti_space = cortex_subcortex_viewer.visualize_cifti_space(
     volumetric_structure_offset=(0, 5, -25),
 )
 
-cortex_subcortex_viewer._zoom_camera_to_content()
-
 fig, ax = plt.subplots(figsize=(10,10))
 ax.axis('off')
 cortex_subcortex_viewer.offscreen_draw_to_matplotlib_axes(ax)
@@ -64,8 +61,6 @@ cifti_space = all_viewer.visualize_cifti_space(
     cifti_left_right_seperation=10,
     volumetric_structure_offset=(0, 5, -25),
 )
-
-all_viewer._zoom_camera_to_content()
 
 fig, ax = plt.subplots(figsize=(10,10))
 ax.axis('off')
