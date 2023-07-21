@@ -1,6 +1,6 @@
 """
 ================
-Cortex, subcortex, cerebellum, and brainstem surface rendering
+Cortex, subcortex, cerebellum, and brainstem
 ================
 
 This is a quick demo for how to plot a surface mesh rendering for the cortex, subcortex, cerebellum, and brainstem.
@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 from cerebro import cerebro_brain_utils as cbu
 from cerebro import cerebro_brain_viewer as cbv
 
-my_brain_viewer = cbv.Cerebro_brain_viewer(offscreen=True)
+my_brain_viewer = cbv.Cerebro_brain_viewer(offscreen=True,background_color=(255,255,255))
 surface = "pial"
 surface_model = my_brain_viewer.load_template_GIFTI_cortical_surface_models(surface)
 

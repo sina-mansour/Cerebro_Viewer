@@ -1,5 +1,5 @@
 # Plotting examples
 
-Cerebro plotting examples
+Examples
 ==================
-Examples demonstrating different visualizations possible with Cerebro viewer.
+Examples demonstrating different visualizations possible with Cerebro Viewer.
