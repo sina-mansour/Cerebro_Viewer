@@ -100,7 +100,7 @@ class Cerebro_brain_viewer:
 
         # initialize render window
         self.renderer_type = "panda3d"
-        self.camera_config = self.view_to_camera_config(self.view)
+        self.camera_config = self._view_to_camera_config(self.view)
 
         self.viewer = renderer.Renderer_panda3d(
             background_color=background_color, offscreen=offscreen, **self.camera_config
@@ -259,12 +259,12 @@ class Cerebro_brain_viewer:
         # get a unique ID
         object_type = "cortical_surface_model"
         object_id = f"{object_type}#{utils.generate_unique_id()}"
-        # load left cortical surface
-        left_vertices, left_triangles = self.load_file(
+        # left cortical surface
+        left_vertices, left_triangles = self._load_file(
             left_surface_file, cbu.load_GIFTI_surface
         )
-        # load right cortical surface
-        right_vertices, right_triangles = self.load_file(
+        # right cortical surface
+        right_vertices, right_triangles = self._load_file(
             right_surface_file, cbu.load_GIFTI_surface
         )
 
@@ -337,7 +337,7 @@ class Cerebro_brain_viewer:
         color = np.array(color)
         return color
 
-    def create_surface_mesh_object(
+    def _create_surface_mesh_object(
         self, object_id, vertices, triangles, color=None, **kwargs
     ):
         # reformat color
@@ -644,7 +644,7 @@ class Cerebro_brain_viewer:
                     nearest_distances, nearest_indices = cbu.get_nearest_neighbors(
                         coordinates, surface_vertices
                     )
-                    self.created_objects[object_id] = self.create_surface_mesh_object(
+                    self.created_objects[object_id] = self._create_surface_mesh_object(
                         object_id=object_id,
                         vertices=surface_vertices,
                         triangles=surface_triangles,
@@ -815,7 +815,7 @@ class Cerebro_brain_viewer:
     # def modify_cifti_dscalar_layer(self, created_layer, dscalar_file=None, loaded_dscalar=None, dscalar_data=None, dscalar_index=0, **kwargs):
     #     # load the cifti dscalar file
     #     if dscalar_file is not None:
-    #         dscalar = self.load_file(dscalar_file, nib.load)
+    #         dscalar = self._load_file(dscalar_file, nib.load)
     #         dscalar_data = dscalar.get_fdata()[dscalar_index]
     #     elif loaded_dscalar is not None:
     #         dscalar_data = loaded_dscalar.get_fdata()[dscalar_index]
