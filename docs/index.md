@@ -19,3 +19,12 @@ general/main
 
 tutorial/surface
 ```
+
+```{toctree}
+:caption: Gallery
+:name: gallery
+:hidden:
+:maxdepth: 2
+
+docs/auto_examples/index.rst
+```
