@@ -17,16 +17,15 @@ from cerebro import cerebro_brain_viewer as cbv
 # Plotting cortex surface only
 # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-# Cortex only
+# Define a viewer
 cortex_viewer = cbv.Cerebro_brain_viewer(offscreen=True,background_color=(255,255,255,1))
-surface = "pial"
-surface_model = cortex_viewer.load_template_GIFTI_cortical_surface_models(surface)
+surface_model = cortex_viewer.load_template_GIFTI_cortical_surface_models(surface="pial")
 
 cifti_space = cortex_viewer.visualize_cifti_space(
     volumetric_structures="none" # Change to "none" for just cortex, or "subcortex" for just cortex and subcortex
 )
 
-fig, ax = plt.subplots(figsize=(10,10))
+fig, ax = plt.subplots(figsize=(10,6))
 plt.subplots_adjust(wspace=0, hspace=0)
 ax.axis('off')
 cortex_viewer.offscreen_draw_to_matplotlib_axes(ax)
@@ -38,16 +37,17 @@ plt.show()
 #%%
 # Plotting cortex and subcortex
 # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+# You also have the option to plot the cortex and subcortex together.
 
+# Define a viewer
 cortex_subcortex_viewer = cbv.Cerebro_brain_viewer(offscreen=True,background_color=(255,255,255,1))
-surface = "pial"
-surface_model = cortex_subcortex_viewer.load_template_GIFTI_cortical_surface_models(surface)
+surface_model = cortex_subcortex_viewer.load_template_GIFTI_cortical_surface_models(surface="pial")
 
 cifti_space = cortex_subcortex_viewer.visualize_cifti_space(
     volumetric_structures="subcortex" # Change to "none" for just cortex, or "all" for cortex, subcortex, cerebellum, and brainstem
 )
 
-fig, ax = plt.subplots(figsize=(10,10))
+fig, ax = plt.subplots(figsize=(10,6))
 plt.subplots_adjust(wspace=0, hspace=0)
 ax.axis('off')
 cortex_subcortex_viewer.offscreen_draw_to_matplotlib_axes(ax)
@@ -59,16 +59,17 @@ plt.show()
 #%%
 # Plotting cortex, subcortex, brainstem, and cerebellum
 # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+# Lastly, you can show all of the brain structures together -- cortex, subcortex, brainstem, and cerebellum.
 
+# Define a viewer
 all_viewer = cbv.Cerebro_brain_viewer(offscreen=True,background_color=(255,255,255,1))
-surface = "pial"
-surface_model = all_viewer.load_template_GIFTI_cortical_surface_models(surface)
+surface_model = all_viewer.load_template_GIFTI_cortical_surface_models(surface="pial")
 
 cifti_space = all_viewer.visualize_cifti_space(
     volumetric_structures="all" # Change to "none" for just cortex, or "subcortex" for just cortex and subcortex
 )
 
-fig, ax = plt.subplots(figsize=(10,10))
+fig, ax = plt.subplots(figsize=(10,6))
 plt.subplots_adjust(wspace=0, hspace=0)
 ax.axis('off')
 all_viewer.offscreen_draw_to_matplotlib_axes(ax)
