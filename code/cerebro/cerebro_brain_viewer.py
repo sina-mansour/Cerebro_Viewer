@@ -337,7 +337,7 @@ class Cerebro_brain_viewer:
         color = np.array(color)
         return color
 
-    def create_surface_mesh_object(
+    def _create_surface_mesh_object(
         self, object_id, vertices, triangles, color=None, **kwargs
     ):
         # reformat color
@@ -644,7 +644,7 @@ class Cerebro_brain_viewer:
                     nearest_distances, nearest_indices = cbu.get_nearest_neighbors(
                         coordinates, surface_vertices
                     )
-                    self.created_objects[object_id] = self.create_surface_mesh_object(
+                    self.created_objects[object_id] = self._create_surface_mesh_object(
                         object_id=object_id,
                         vertices=surface_vertices,
                         triangles=surface_triangles,
