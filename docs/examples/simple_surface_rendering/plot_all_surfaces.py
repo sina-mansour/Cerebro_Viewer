@@ -1,31 +1,76 @@
 """
 ================
-Cortex, subcortex, cerebellum, and brainstem
+Cortex, subcortex, cerebellum, and brainstem surface rendering
 ================
 
 This is a quick demo for how to plot a surface mesh rendering for the cortex, subcortex, cerebellum, and brainstem.
 
 Here, we use the template GIFTI data, but you can also use your own GIFTI data. 
+
+You can plot just the cortex (first image below), just the cortex and subcortex (second image below), or the cortex, subcortex, cerebellum, and brainstem (third image below).
 """
 import matplotlib.pyplot as plt
 from cerebro import cerebro_brain_utils as cbu
 from cerebro import cerebro_brain_viewer as cbv
 
-my_brain_viewer = cbv.Cerebro_brain_viewer(offscreen=True,background_color=(255,255,255,1))
+# Cortex only
+cortex_viewer = cbv.Cerebro_brain_viewer(offscreen=True,background_color=(255,255,255,1))
 surface = "pial"
-surface_model = my_brain_viewer.load_template_GIFTI_cortical_surface_models(surface)
+surface_model = cortex_viewer.load_template_GIFTI_cortical_surface_models(surface)
 
-# cifti_space = my_brain_viewer.visualize_cifti_space()
-cifti_space = my_brain_viewer.visualize_cifti_space(
+cifti_space = cortex_viewer.visualize_cifti_space(
+    volumetric_structures="none", # Change to "none" for just cortex, or "subcortex" for just cortex and subcortex
+)
+cortex_viewer._zoom_camera_to_content()
+
+fig, ax = plt.subplots(figsize=(10,10))
+ax.axis('off')
+cortex_viewer.offscreen_draw_to_matplotlib_axes(ax)
+
+# Clear this viewer
+cortex_viewer.viewer.window.destroy()
+plt.show()
+
+# Cortex and subcortex
+cortex_subcortex_viewer = cbv.Cerebro_brain_viewer(offscreen=True,background_color=(255,255,255,1))
+surface = "pial"
+surface_model = cortex_subcortex_viewer.load_template_GIFTI_cortical_surface_models(surface)
+
+cifti_space = cortex_subcortex_viewer.visualize_cifti_space(
+    volumetric_structures="subcortex", # Change to "none" for just cortex, or "all" for cortex, subcortex, cerebellum, and brainstem
+    cifti_expansion_scale=20,
+    cifti_left_right_seperation=10,
+    volumetric_structure_offset=(0, 5, -25),
+)
+
+cortex_subcortex_viewer._zoom_camera_to_content()
+
+fig, ax = plt.subplots(figsize=(10,10))
+ax.axis('off')
+cortex_subcortex_viewer.offscreen_draw_to_matplotlib_axes(ax)
+
+# Clear this viewer
+cortex_subcortex_viewer.viewer.window.destroy()
+plt.show()
+
+# Cortex, subcortex, cerebellum, and brainstem
+all_viewer = cbv.Cerebro_brain_viewer(offscreen=True,background_color=(255,255,255,1))
+surface = "pial"
+surface_model = all_viewer.load_template_GIFTI_cortical_surface_models(surface)
+
+cifti_space = all_viewer.visualize_cifti_space(
     volumetric_structures="all", # Change to "none" for just cortex, or "subcortex" for just cortex and subcortex
     cifti_expansion_scale=20,
     cifti_left_right_seperation=10,
     volumetric_structure_offset=(0, 5, -25),
 )
 
+all_viewer._zoom_camera_to_content()
+
 fig, ax = plt.subplots(figsize=(10,10))
 ax.axis('off')
-my_brain_viewer.offscreen_draw_to_matplotlib_axes(ax)
+all_viewer.offscreen_draw_to_matplotlib_axes(ax)
 
 # Clear this viewer
-my_brain_viewer.viewer.window.destroy()
+all_viewer.viewer.window.destroy()
+plt.show()

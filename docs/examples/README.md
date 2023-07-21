@@ -1,4 +1,3 @@
-# Plotting examples
 
 Examples
 ==================
