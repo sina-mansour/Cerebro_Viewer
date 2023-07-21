@@ -19,7 +19,7 @@ from cerebro import cerebro_brain_viewer as cbv
 
 # Define a viewer
 cortex_viewer = cbv.Cerebro_brain_viewer(offscreen=True,background_color=(255,255,255,1))
-surface_model = cortex_viewer.load_template_GIFTI_cortical_surface_models(surface="pial")
+surface_model = cortex_viewer.load_template_GIFTI_cortical_surface_models(template_surface="pial")
 
 cifti_space = cortex_viewer.visualize_cifti_space(
     volumetric_structures="none" # Change to "none" for just cortex, or "subcortex" for just cortex and subcortex
@@ -41,7 +41,7 @@ plt.show()
 
 # Define a viewer
 cortex_subcortex_viewer = cbv.Cerebro_brain_viewer(offscreen=True,background_color=(255,255,255,1))
-surface_model = cortex_subcortex_viewer.load_template_GIFTI_cortical_surface_models(surface="pial")
+surface_model = cortex_subcortex_viewer.load_template_GIFTI_cortical_surface_models(template_surface="pial")
 
 cifti_space = cortex_subcortex_viewer.visualize_cifti_space(
     volumetric_structures="subcortex" # Change to "none" for just cortex, or "all" for cortex, subcortex, cerebellum, and brainstem
@@ -63,7 +63,7 @@ plt.show()
 
 # Define a viewer
 all_viewer = cbv.Cerebro_brain_viewer(offscreen=True,background_color=(255,255,255,1))
-surface_model = all_viewer.load_template_GIFTI_cortical_surface_models(surface="pial")
+surface_model = all_viewer.load_template_GIFTI_cortical_surface_models(template_surface="pial")
 
 cifti_space = all_viewer.visualize_cifti_space(
     volumetric_structures="all" # Change to "none" for just cortex, or "subcortex" for just cortex and subcortex
