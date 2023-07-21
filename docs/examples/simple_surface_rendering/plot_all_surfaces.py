@@ -25,7 +25,7 @@ cifti_space = cortex_viewer.visualize_cifti_space(
     volumetric_structures="none" # Change to "none" for just cortex, or "subcortex" for just cortex and subcortex
 )
 
-fig, ax = plt.subplots(figsize=(10,6))
+fig, ax = plt.subplots(figsize=(8,7))
 plt.subplots_adjust(wspace=0, hspace=0)
 ax.axis('off')
 cortex_viewer.offscreen_draw_to_matplotlib_axes(ax)
@@ -47,7 +47,7 @@ cifti_space = cortex_subcortex_viewer.visualize_cifti_space(
     volumetric_structures="subcortex" # Change to "none" for just cortex, or "all" for cortex, subcortex, cerebellum, and brainstem
 )
 
-fig, ax = plt.subplots(figsize=(10,6))
+fig, ax = plt.subplots(figsize=(8,7))
 plt.subplots_adjust(wspace=0, hspace=0)
 ax.axis('off')
 cortex_subcortex_viewer.offscreen_draw_to_matplotlib_axes(ax)
@@ -69,7 +69,7 @@ cifti_space = all_viewer.visualize_cifti_space(
     volumetric_structures="all" # Change to "none" for just cortex, or "subcortex" for just cortex and subcortex
 )
 
-fig, ax = plt.subplots(figsize=(10,6))
+fig, ax = plt.subplots(figsize=(8,7))
 plt.subplots_adjust(wspace=0, hspace=0)
 ax.axis('off')
 all_viewer.offscreen_draw_to_matplotlib_axes(ax)
