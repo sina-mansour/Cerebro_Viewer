@@ -13,6 +13,8 @@ import matplotlib.pyplot as plt
 from cerebro import cerebro_brain_utils as cbu
 from cerebro import cerebro_brain_viewer as cbv
 
+#%%
+
 """
 Cortex only
 ================
@@ -36,6 +38,8 @@ cortex_viewer.offscreen_draw_to_matplotlib_axes(ax)
 cortex_viewer.viewer.window.destroy()
 plt.show()
 
+#%%
+
 """
 Cortex and subcortex
 ================
@@ -57,6 +61,8 @@ cortex_subcortex_viewer.offscreen_draw_to_matplotlib_axes(ax)
 # Clear this viewer
 cortex_subcortex_viewer.viewer.window.destroy()
 plt.show()
+
+#%%
 
 """
 Cortex, subcortex, brainstem, and cerebellum
