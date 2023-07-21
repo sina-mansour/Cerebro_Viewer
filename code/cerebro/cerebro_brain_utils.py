@@ -25,7 +25,7 @@ from skimage import measure
 import trimesh as tm
 from scipy import spatial
 
-from cerebro_types import Voxel
+from .cerebro_types import Voxel
 
 # Utility template files and directories
 
