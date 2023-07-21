@@ -6,5 +6,5 @@
 :hidden:
 general/main
 tutorial/surface
-examples/index
+auto_examples/index
 ```
