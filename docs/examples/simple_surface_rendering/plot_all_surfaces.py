@@ -26,3 +26,6 @@ cifti_space = my_brain_viewer.visualize_cifti_space(
 fig, ax = plt.subplots(figsize=(10,10))
 ax.axis('off')
 my_brain_viewer.offscreen_draw_to_matplotlib_axes(ax)
+
+# Clear this viewer
+my_brain_viewer.viewer.window.destroy()
