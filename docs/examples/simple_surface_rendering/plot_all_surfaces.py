@@ -35,7 +35,7 @@ cortex_viewer.viewer.window.destroy()
 plt.show()
 
 #%%
-# Plotting cortex and subcortex
+# Cortex and subcortex
 # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 # You also have the option to plot the cortex and subcortex together.
 
@@ -57,7 +57,7 @@ cortex_subcortex_viewer.viewer.window.destroy()
 plt.show()
 
 #%%
-# Plotting cortex, subcortex, brainstem, and cerebellum
+# Cortex, subcortex, brainstem, and cerebellum
 # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 # Lastly, you can show all of the brain structures together -- cortex, subcortex, brainstem, and cerebellum.
 
@@ -76,4 +76,32 @@ all_viewer.offscreen_draw_to_matplotlib_axes(ax)
 
 # Clear this viewer
 all_viewer.viewer.window.destroy()
+plt.show()
+
+#%%
+# Using your own surface data
+# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+# If you have your own surface data in GIFTI format, here's how you can plot it -- with this example showing a cortical flatmap:
+
+your_surface_viewer = cbv.Cerebro_brain_viewer(offscreen=True,background_color=(255,255,255,1))
+
+left_surface_file = "/Users/abry4213/github/Cerebro_Viewer/code/data/templates/HCP/surfaces/S1200.L.inflated_MSMAll.32k_fs_LR.surf.gii"
+right_surface_file = "/Users/abry4213/github/Cerebro_Viewer/code/data/templates/HCP/surfaces/S1200.R.inflated_MSMAll.32k_fs_LR.surf.gii"
+
+surface_model = your_surface_viewer.load_GIFTI_cortical_surface_models(
+    left_surface_file=left_surface_file,
+    right_surface_file=right_surface_file
+)
+
+cifti_space = your_surface_viewer.visualize_cifti_space(
+    volumetric_structures="subcortex"
+)
+
+fig, ax = plt.subplots(figsize=(8,7))
+plt.subplots_adjust(wspace=0, hspace=0)
+ax.axis('off')
+your_surface_viewer.offscreen_draw_to_matplotlib_axes(ax)
+
+# Clear this viewer
+your_surface_viewer.viewer.window.destroy()
 plt.show()
