@@ -14,12 +14,8 @@ from cerebro import cerebro_brain_utils as cbu
 from cerebro import cerebro_brain_viewer as cbv
 
 #%%
-
-"""
-Cortex only
-================
-Plotting just the cortex.
-"""
+# Plotting cortex surface only
+# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 # Cortex only
 cortex_viewer = cbv.Cerebro_brain_viewer(offscreen=True,background_color=(255,255,255,1))
@@ -31,6 +27,7 @@ cifti_space = cortex_viewer.visualize_cifti_space(
 )
 
 fig, ax = plt.subplots(figsize=(10,10))
+plt.subplots_adjust(wspace=0, hspace=0)
 ax.axis('off')
 cortex_viewer.offscreen_draw_to_matplotlib_axes(ax)
 
@@ -39,12 +36,8 @@ cortex_viewer.viewer.window.destroy()
 plt.show()
 
 #%%
-
-"""
-Cortex and subcortex
-================
-Plotting just the cortex and subcortex.
-"""
+# Plotting cortex and subcortex
+# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 cortex_subcortex_viewer = cbv.Cerebro_brain_viewer(offscreen=True,background_color=(255,255,255,1))
 surface = "pial"
@@ -55,6 +48,7 @@ cifti_space = cortex_subcortex_viewer.visualize_cifti_space(
 )
 
 fig, ax = plt.subplots(figsize=(10,10))
+plt.subplots_adjust(wspace=0, hspace=0)
 ax.axis('off')
 cortex_subcortex_viewer.offscreen_draw_to_matplotlib_axes(ax)
 
@@ -63,12 +57,8 @@ cortex_subcortex_viewer.viewer.window.destroy()
 plt.show()
 
 #%%
-
-"""
-Cortex, subcortex, brainstem, and cerebellum
-================
-Plotting just the cortex.
-"""
+# Plotting cortex, subcortex, brainstem, and cerebellum
+# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 all_viewer = cbv.Cerebro_brain_viewer(offscreen=True,background_color=(255,255,255,1))
 surface = "pial"
@@ -79,6 +69,7 @@ cifti_space = all_viewer.visualize_cifti_space(
 )
 
 fig, ax = plt.subplots(figsize=(10,10))
+plt.subplots_adjust(wspace=0, hspace=0)
 ax.axis('off')
 all_viewer.offscreen_draw_to_matplotlib_axes(ax)
 
