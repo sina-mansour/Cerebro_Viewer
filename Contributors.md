@@ -23,3 +23,4 @@ In Brainhack Global 2022 we aim to:
 - Arush Arun
 - Brooklyn Wright
 - Jayson Jeganathan
+- Annie Bryant
