@@ -83,10 +83,18 @@ plt.show()
 # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 # If you have your own surface data in GIFTI format, here's how you can plot it -- with this example showing a cortical flatmap:
 
+# Define a viewer
 your_surface_viewer = cbv.Cerebro_brain_viewer(offscreen=True,background_color=(255,255,255,1))
 
-left_surface_file = "../data/templates/HCP/surfaces/S1200.L.inflated_MSMAll.32k_fs_LR.surf.gii"
-right_surface_file = "../data/templates/HCP/surfaces/S1200.R.inflated_MSMAll.32k_fs_LR.surf.gii"
+# Define your left and right surface GIFTI files
+from pathlib import Path
+try:
+    main_path = Path(__file__).parents[3]
+except NameError:
+    import sys
+    main_path = Path(sys.argv[0]).parents[3]
+left_surface_file = f"{main_path}/code/data/templates/HCP/surfaces/S1200.L.inflated_MSMAll.32k_fs_LR.surf.gii"
+right_surface_file = f"{main_path}/code/data/templates/HCP/surfaces/S1200.R.inflated_MSMAll.32k_fs_LR.surf.gii"
 
 surface_model = your_surface_viewer.load_GIFTI_cortical_surface_models(
     left_surface_file=left_surface_file,
