@@ -7,4 +7,5 @@
 general/main
 tutorial/surface
 auto_examples/index
+api/reference
 ```
