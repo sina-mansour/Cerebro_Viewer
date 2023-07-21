@@ -30,6 +30,7 @@ from . import cerebro_brain_utils as cbu
 # suppress trivial nibabel warnings, see https://github.com/nipy/nibabel/issues/771
 nib.imageglobals.logger.setLevel(40)
 
+
 class Cerebro_brain_viewer:
     """Cerebero brain viewer engine
 
@@ -177,8 +178,8 @@ class Cerebro_brain_viewer:
         return camera_config
 
     def change_view(self, view, fit=False):
-        """ Specify the viewing angle of the brain.
-        This method can be used to change the viewing angle of the brain using 
+        """Specify the viewing angle of the brain.
+        This method can be used to change the viewing angle of the brain using
         pre-configured angle options or custom viewing options.
 
         Parameters
@@ -187,16 +188,16 @@ class Cerebro_brain_viewer:
         The Cerebro_brain_viewer object.
 
         view
-        Description of the rendered viewing angle. Pre-configured options include: 
+        Description of the rendered viewing angle. Pre-configured options include:
             "R" or "Right" for right hemisphere lateral view
             "L" or "Left" for left hemisphere lateral view
             "A" or "Anterior" for anterior view
             "P" or "Posterior" for posterior view
             "S" or "Superior" for superior view
             "I" or "Inferior" for inferior view
-        Alternatively, you may provide a tuple of the form (camera_pos, camera_target, 
+        Alternatively, you may provide a tuple of the form (camera_pos, camera_target,
         camera_fov, camera_rotation) to specify the camera configuration directly.
-        
+
         fit
         If True, the camera will be zoomed to fit the content of the scene.
         """
@@ -208,7 +209,7 @@ class Cerebro_brain_viewer:
         self.viewer.change_view(**self.camera_config)
 
     def center_camera(self, fit=True):
-        """ Center the camera on the brain.
+        """Center the camera on the brain.
         This method can be used to center the camera on the brain.
 
         Parameters
@@ -225,10 +226,9 @@ class Cerebro_brain_viewer:
             self.change_view((None, self.center_coordinate, None, None), fit=fit)
 
     def load_GIFTI_cortical_surface_models(self, left_surface_file, right_surface_file):
-        """
-        Load a GIFTI cortical surface model.
+        """Load a GIFTI cortical surface model.
 
-        Loads a GIFTI cortical surface model from two separate GIFTI surface files
+        This function loads a GIFTI cortical surface model from two separate GIFTI surface files
         for the left and right hemispheres. The loaded cortical surface model is
         stored in the object's internal data structure.
 
@@ -286,10 +286,9 @@ class Cerebro_brain_viewer:
         return created_object
 
     def load_template_GIFTI_cortical_surface_models(self, template_surface="inflated"):
-        """
-        Load a GIFTI cortical surface model using a template surface.
+        """Load a GIFTI cortical surface model using a template surface.
 
-        Loads a GIFTI cortical surface model by using a template surface name.
+        This function loads a GIFTI cortical surface model by using a template surface name.
         It retrieves the file paths of the left and right hemispheres from the template surface.
         The loaded cortical surface model is then stored in the object's internal data structure.
 
@@ -304,7 +303,8 @@ class Cerebro_brain_viewer:
             ValueError: If the provided 'template_surface' is not recognized or not available.
 
         Example:
-            surface_model = my_brain_viewer.load_template_GIFTI_cortical_surface_models('pial')
+            surface = 'pial'
+            surface_model = my_brain_viewer.load_template_GIFTI_cortical_surface_models(surface)
         """
         # get file paths from template surface name
         (
@@ -321,6 +321,23 @@ class Cerebro_brain_viewer:
         return cortical_surface_model
 
     def _load_file(self, file_name, load_func, use_cache=True):
+        """Load a file using a specified loading function.
+
+        This function loads a file using the provided loading function. It checks if the file has already been loaded and
+        returns the cached version if 'use_cache' is set to True. Otherwise, it loads the file using the loading function
+        and caches it for future use.
+
+        Args:
+            file_name (str): The name or path of the file to be loaded.
+            load_func (function): The loading function to be used for loading the file.
+            use_cache (bool, optional): Whether to use the cached version of the file if available. Defaults to True.
+
+        Returns:
+            Any: The loaded file data returned by the loading function.
+
+        Example:
+            data = my_brain_viewer._load_file(file_to_load, my_loading_function)
+        """
         if use_cache and (file_name in self.loaded_files):
             return self.loaded_files[file_name]
         else:
@@ -329,7 +346,21 @@ class Cerebro_brain_viewer:
             return loaded_file
 
     def _prepare_color(self, color):
-        # prepare the color to the right format
+        """Prepare the color value to the appropriate format.
+
+        This function takes a color value, checks if it is specified (not None), and sets a base color if it is not provided.
+        It then converts the color value into a NumPy array.
+
+        Args:
+            color (tuple or None): The color value to be prepared. If None, a base color will be used.
+
+        Returns:
+            numpy.ndarray: The color value as a NumPy array.
+
+        Example:
+            color = (1.0, 0.5, 0.0)  # RGB values
+            prepared_color = my_brain_viewer._prepare_color(color)
+        """
         # set a base color if not specified
         if color is None:
             color = self.null_color
@@ -340,6 +371,42 @@ class Cerebro_brain_viewer:
     def create_surface_mesh_object(
         self, object_id, vertices, triangles, color=None, **kwargs
     ):
+        """Create a surface mesh object.
+
+        This function creates a surface mesh object with the given 'object_id', 'vertices', and 'triangles'.
+        The object can be customized with additional 'kwargs' for specific use cases.
+
+        Args:
+            object_id (str): A unique identifier for the surface mesh object.
+            vertices (numpy.ndarray): The vertices of the surface mesh as a 2D NumPy array.
+            triangles (numpy.ndarray): The triangles (faces) of the surface mesh as a 2D NumPy array.
+            color (tuple or None, optional): The base color for the surface mesh. If None, a default color will be used.
+            **kwargs: Additional keyword arguments to customize the surface mesh object.
+
+        Returns:
+            dict: A dictionary representing the surface mesh object with the following keys:
+                - 'object_id' (str): The unique identifier of the surface mesh object.
+                - 'object_type' (str): The type of the object, set as 'surface_mesh'.
+                - 'vertices' (numpy.ndarray): The vertices of the surface mesh.
+                - 'triangles' (numpy.ndarray): The triangles (faces) of the surface mesh.
+                - 'base_color' (numpy.ndarray): The base color of the surface mesh as a NumPy array.
+                - 'layers' (dict): A dictionary to store additional layers associated with the object.
+                - 'visibility' (bool): A flag indicating whether the object is visible.
+                - 'render_update_required' (bool): A flag indicating if the object requires a render update.
+                - 'rendered' (bool): A flag indicating if the object has been rendered.
+
+        Example:
+            object_id = "surface_mesh_1"
+            vertices = np.array([[0, 0, 0], [1, 0, 0], [0, 1, 0]])
+            triangles = np.array([[0, 1, 2]])
+            surface_mesh = my_brain_viewer.create_surface_mesh_object(
+                object_id,
+                vertices,
+                triangles,
+                color=(1.0, 0.5, 0.0),
+                visibility=True
+            )
+        """
         # reformat color
         color = self._prepare_color(color)
 
@@ -361,6 +428,42 @@ class Cerebro_brain_viewer:
     def create_spheres_object(
         self, object_id, coordinates, radii, color=None, **kwargs
     ):
+        """Create a spheres object.
+
+        This function creates a spheres object with the given 'object_id', 'coordinates', and 'radii'.
+        The object can be customized with additional 'kwargs' for specific use cases.
+
+        Args:
+            object_id (str): A unique identifier for the spheres object.
+            coordinates (numpy.ndarray): The coordinates of the spheres as a 2D NumPy array (shape: Nx3).
+            radii (float, numpy.ndarray): The radii of the spheres. Can be a single value or a 1D NumPy array (shape: N).
+            color (tuple or None, optional): The base color for the spheres. If None, a default color will be used.
+            **kwargs: Additional keyword arguments to customize the spheres object.
+
+        Returns:
+            dict: A dictionary representing the spheres object with the following keys:
+                - 'object_id' (str): The unique identifier of the spheres object.
+                - 'object_type' (str): The type of the object, set as 'spheres'.
+                - 'coordinates' (numpy.ndarray): The coordinates of the spheres.
+                - 'radii' (numpy.ndarray): The radii of the spheres.
+                - 'base_color' (numpy.ndarray): The base color of the spheres as a NumPy array.
+                - 'layers' (dict): A dictionary to store additional layers associated with the object.
+                - 'visibility' (bool): A flag indicating whether the object is visible.
+                - 'render_update_required' (bool): A flag indicating if the object requires a render update.
+                - 'rendered' (bool): A flag indicating if the object has been rendered.
+
+        Example:
+            coordinates = np.array([[0, 0, 0], [1, 1, 1], [2, 2, 2]])
+            radii = 0.5
+            object_id = "spheres_1"
+            spheres = my_brain_viewer.create_spheres_object(
+                object_id=object_id,
+                coordinates,
+                radii,
+                color=(0.0, 1.0, 0.0),
+                visibility=True
+            )
+        """
         # reformat color
         color = self._prepare_color(color)
 
@@ -394,6 +497,42 @@ class Cerebro_brain_viewer:
     def create_cylinders_object(
         self, object_id, coordinates, radii, color=None, **kwargs
     ):
+        """Create a cylinders object.
+
+        This function creates a cylinders object with the given 'object_id', 'coordinates', and 'radii'.
+        The object can be customized with additional 'kwargs' for specific use cases.
+
+        Args:
+            object_id (str): A unique identifier for the cylinders object.
+            coordinates (numpy.ndarray): The coordinates of the cylinders as a 2D NumPy array (shape: Nx3).
+            radii (float, numpy.ndarray): The radii of the cylinders. Can be a single value or a 1D NumPy array (shape: N).
+            color (tuple or None, optional): The base color for the cylinders. If None, a default color will be used.
+            **kwargs: Additional keyword arguments to customize the cylinders object.
+
+        Returns:
+            dict: A dictionary representing the cylinders object with the following keys:
+                - 'object_id' (str): The unique identifier of the cylinders object.
+                - 'object_type' (str): The type of the object, set as 'cylinders'.
+                - 'coordinates' (numpy.ndarray): The coordinates of the cylinders.
+                - 'radii' (numpy.ndarray): The radii of the cylinders.
+                - 'base_color' (numpy.ndarray): The base color of the cylinders as a NumPy array.
+                - 'layers' (dict): A dictionary to store additional layers associated with the object.
+                - 'visibility' (bool): A flag indicating whether the object is visible.
+                - 'render_update_required' (bool): A flag indicating if the object requires a render update.
+                - 'rendered' (bool): A flag indicating if the object has been rendered.
+
+        Example:
+            coordinates = np.array([[0, 0, 0], [1, 1, 1], [2, 2, 2]])
+            radii = 0.2
+            object_id = "cylinders_1"
+            cylinders = my_brain_viewer.create_cylinders_object(
+                object_id=object_id,
+                coordinates,
+                radii,
+                color=(0.0, 0.0, 1.0),
+                visibility=True
+            )
+        """
         # reformat color
         color = self._prepare_color(color)
 
@@ -421,8 +560,43 @@ class Cerebro_brain_viewer:
     def visualize_spheres(
         self, coordinates, radii=1, coordinate_offset=0, color=None, **kwargs
     ):
-        """
-        This function can be used to add arbitrary spheres to the view.
+        """Visualize arbitrary spheres in the viewer.
+
+        This function allows you to add arbitrary spheres to the viewer's visualization.
+        It creates a new spheres object with the specified 'coordinates', 'radii', 'color',
+        and other custom properties using additional keyword arguments (kwargs).
+
+        Args:
+            coordinates (numpy.ndarray): The coordinates of the spheres as a 2D NumPy array (shape: Nx3).
+            radii (float, numpy.ndarray, optional): The radii of the spheres. Can be a single value or a 1D NumPy array (shape: N).
+                Default value is 1.
+            coordinate_offset (float, optional): An offset to apply to the 'coordinates'. Default value is 0.
+            color (tuple or None, optional): The base color for the spheres. If None, a default color will be used.
+                Default value is None.
+            **kwargs: Additional keyword arguments to customize the spheres object.
+
+        Returns:
+            dict: A dictionary representing the created spheres object with the following keys:
+                - 'object_id' (str): The unique identifier of the spheres object.
+                - 'object_type' (str): The type of the object, set as 'spheres'.
+                - 'coordinates' (numpy.ndarray): The coordinates of the spheres.
+                - 'radii' (numpy.ndarray): The radii of the spheres.
+                - 'base_color' (numpy.ndarray): The base color of the spheres as a NumPy array.
+                - 'layers' (dict): A dictionary to store additional layers associated with the object.
+                - 'visibility' (bool): A flag indicating whether the object is visible.
+                - 'render_update_required' (bool): A flag indicating if the object requires a render update.
+                - 'rendered' (bool): A flag indicating if the object has been rendered.
+
+        Example:
+            coordinates = np.array([[0, 0, 0], [1, 1, 1], [2, 2, 2]])
+            radii = 0.2
+            spheres = my_brain_viewer.visualize_spheres(
+                coordinates,
+                radii,
+                color=(1.0, 0.0, 0.0),
+                coordinate_offset=10.0,
+                visibility=True
+            )
         """
         # generate a unique id for the object
         unique_id = f"{utils.generate_unique_id()}"
@@ -444,9 +618,42 @@ class Cerebro_brain_viewer:
     def visualize_cylinders(
         self, coordinates, radii=1, coordinate_offset=0, color=None, **kwargs
     ):
-        """
-        This function can be used to add arbitrary cylinders to the view to
-        represent lines connecting pairs of coordinates.
+        """Visualize arbitrary cylinders in the viewer to represent lines connecting pairs of coordinates.
+
+        This function allows you to add arbitrary cylinders to the viewer's visualization. The cylinders
+        are used to represent lines connecting pairs of 'coordinates'.
+
+        Args:
+            coordinates (numpy.ndarray): The coordinates of the cylinders as a 2D NumPy array (shape: Nx2x3).
+            radii (float, numpy.ndarray, optional): The radii of the cylinders. Can be a single value or a 1D NumPy array (shape: N).
+                Default value is 1.
+            coordinate_offset (float, optional): An offset to apply to the 'coordinates'. Default value is 0.
+            color (tuple or None, optional): The base color for the cylinders. If None, a default color will be used.
+                Default value is None.
+            **kwargs: Additional keyword arguments to customize the cylinders object.
+
+        Returns:
+            dict: A dictionary representing the created cylinders object with the following keys:
+                - 'object_id' (str): The unique identifier of the cylinders object.
+                - 'object_type' (str): The type of the object, set as 'cylinders'.
+                - 'coordinates' (numpy.ndarray): The coordinates of the cylinders.
+                - 'radii' (numpy.ndarray): The radii of the cylinders.
+                - 'base_color' (numpy.ndarray): The base color of the cylinders as a NumPy array.
+                - 'layers' (dict): A dictionary to store additional layers associated with the object.
+                - 'visibility' (bool): A flag indicating whether the object is visible.
+                - 'render_update_required' (bool): A flag indicating if the object requires a render update.
+                - 'rendered' (bool): A flag indicating if the object has been rendered.
+
+        Example:
+            coordinates = np.array([[[0, 0, 0], [1, 1, 1]], [[2, 2, 2], [3, 3, 3]]])
+            radii = 0.1
+            cylinders = my_brain_viewer.visualize_cylinders(
+                coordinates,
+                radii,
+                color=(0.0, 0.0, 1.0),
+                coordinate_offset=5.0,
+                visibility=True
+            )
         """
         # generate a unique id for the object
         unique_id = f"{utils.generate_unique_id()}"
@@ -476,9 +683,51 @@ class Cerebro_brain_viewer:
         node_kwargs={},
         edge_kwargs={},
     ):
-        """
-        This function can be used to visualize a 3D network with a ball and
-        stick model. Nodes are rendered as spheres, and edges as cylinders.
+        """Visualize a 3D network with a ball and stick model.
+
+        This function allows you to visualize a 3D network using a ball and stick model. Nodes in the network are represented
+        as spheres, and edges connecting the nodes are represented as cylinders.
+
+        Args:
+            adjacency (numpy.ndarray or scipy.sparse.spmatrix): The adjacency matrix representing the network connections.
+                Should be a square matrix where each entry (i, j) indicates the weight or presence of an edge between nodes i and j.
+            node_coordinates (numpy.ndarray): The 3D coordinates of the nodes in the network as a 2D NumPy array (shape: Nx3).
+            node_radii (float or numpy.ndarray, optional): The radii of the spheres representing the nodes. Can be a single value or a 1D NumPy array (shape: N).
+                Default value is 5.
+            edge_radii (float or numpy.ndarray, optional): The radii of the cylinders representing the edges. Can be a single value or a 1D NumPy array (shape: M).
+                Default value is 1.
+            node_color (tuple or None, optional): The base color for the nodes. If None, a default color will be used.
+                Default value is None.
+            edge_color (tuple or None, optional): The base color for the edges. If None, a default color will be used.
+                Default value is None.
+            node_kwargs (dict, optional): Additional keyword arguments to customize the nodes. These arguments will be passed to the `visualize_spheres` function.
+                Default value is an empty dictionary ({}).
+            edge_kwargs (dict, optional): Additional keyword arguments to customize the edges. These arguments will be passed to the `visualize_cylinders` function.
+                Default value is an empty dictionary ({}).
+
+        Returns:
+            dict: A dictionary representing the created network collection object with the following keys:
+                - 'object_id' (str): The unique identifier of the network collection object.
+                - 'object_type' (str): The type of the object, set as 'object_collection'.
+                - 'collection_type' (str): The type of collection, set as 'network'.
+                - 'contained_object_ids' (list): A list of unique identifiers of the objects contained in the collection (nodes and edges).
+                - 'layers' (dict): A dictionary to store additional layers associated with the network collection.
+
+        Example:
+            adjacency = np.array([[0, 1, 1], [1, 0, 1], [1, 1, 0]])
+            node_coordinates = np.array([[10, 10, 10], [20, 20, 20], [30, 30, 30]])
+            node_radii = 4
+            edge_radii = 0.5
+            network_collection = my_brain_viewer.visualize_network(
+                adjacency,
+                node_coordinates,
+                node_radii,
+                edge_radii,
+                node_color=(1.0, 0.0, 0.0),
+                edge_color=(0.0, 1.0, 0.0),
+                node_kwargs={"visibility": True},
+                edge_kwargs={"visibility": True}
+            )
         """
         # Create edge list from adjacency
         adjacency = sparse.coo_matrix(adjacency)
@@ -530,6 +779,64 @@ class Cerebro_brain_viewer:
         volumetric_structure_offset=(0, 0, 0),
         **kwargs,
     ):
+        """Visualize a CIFTI space combining cortical surface models and subcortical structures.
+
+        This function allows you to visualize a CIFTI space by combining cortical surface models and subcortical structures.
+        The cortical surface models are rendered as surface meshes, while the subcortical structures can be rendered either
+        as spheres or as a surface generated using the marching cube algorithm with optional smoothing.
+
+        Args:
+            cortical_surface_model_id (str, optional): The unique identifier of the cortical surface model object to be visualized.
+                If not provided, the default cortical surface model will be used.
+            cifti_template_file (str or None, optional): The file path of the CIFTI template file to be used for visualization.
+                If None, the default CIFTI template file will be used.
+            volumetric_structures (str or None, optional): A string specifying which volumetric structures to visualize.
+                It can take the following values: "none" (no volumetric structures), "all" (all available volumetric structures),
+                or a space-separated string with specific volumetric structure names (e.g., "CIFTI_STRUCTURE_ACCUMBENS_LEFT CIFTI_STRUCTURE_AMYGDALA_LEFT").
+                Default value is "none".
+            volume_rendering (str, optional): The rendering method for subcortical structures. It can take one of the following values:
+                "surface" (use the marching cube algorithm with optional smoothing), "spheres" (render as spheres), or "spheres_peeled"
+                (apply peeling to get a thin layer from subcortical structures). Default value is "surface".
+            cifti_expansion_scale (float, optional): The scale factor for expanding the volumetric structures along their normal vectors.
+                This value is applied to all structures. Default value is 0.
+            cifti_expansion_coeffs (dict, optional): A dictionary containing expansion coefficients for each volumetric structure.
+                The keys should be CIFTI structure names (e.g., "CIFTI_STRUCTURE_ACCUMBENS_LEFT") and the values should be 3D arrays representing
+                the expansion coefficients along the X, Y, and Z axes. Default value is cbu.cifti_expansion_coeffs.
+            cifti_left_right_seperation (float, optional): The distance between the left and right cortical surface models.
+                Default value is 0.
+            volumetric_structure_offset (tuple, optional): A 3D tuple specifying the offset for the volumetric structures.
+                This value is applied to all structures. Default value is (0, 0, 0).
+            **kwargs: Additional keyword arguments that can be passed to the visualization methods (e.g., smoothing parameters).
+
+        Returns:
+            dict: A dictionary representing the created CIFTI space collection object with the following keys:
+                - 'object_id' (str): The unique identifier of the CIFTI space collection object.
+                - 'object_type' (str): The type of the object, set as 'object_collection'.
+                - 'collection_type' (str): The type of collection, set as 'cifti_space'.
+                - 'cifti_template' (nibabel.cifti2.Cifti2Image): The loaded CIFTI template as a Cifti2Image object.
+                - 'contained_object_ids' (list): A list of unique identifiers of the objects contained in the collection (surface models and subcortical structures).
+                - 'layers' (dict): A dictionary to store additional layers associated with the CIFTI space collection.
+                - 'surface_model_id' (str): The unique identifier of the cortical surface model object used for visualization.
+
+        Example:
+            cifti_template_file = "path/to/my/cifti/template.dscalar.nii"
+            cortical_surface_model_id = "cortical_surface_model#abc123"
+            cifti_space_collection = my_brain_viewer.visualize_cifti_space(
+                cortical_surface_model_id,
+                cifti_template_file,
+                volumetric_structures="all",
+                volume_rendering="surface",
+                cifti_expansion_scale=0.5,
+                cifti_expansion_coeffs={
+                    "CIFTI_STRUCTURE_ACCUMBENS_LEFT": [0.1, 0.2, 0.3],
+                    "CIFTI_STRUCTURE_ACCUMBENS_RIGHT": [0.4, 0.3, 0.2],
+                },
+                cifti_left_right_seperation=10.0,
+                volumetric_structure_offset=(0, 0, 5),
+                smoothing_iterations=10,
+                smoothing_lambda=0.5
+            )
+        """
         # initialization
         if cortical_surface_model_id is None:
             cortical_surface_model_id = self.default_objects["cortical_surface_model"]
@@ -688,6 +995,39 @@ class Cerebro_brain_viewer:
         scale=None,
         dscalar_index=0,
     ):
+        """Convert data values to RGBA colors based on the provided colormap and normalization options.
+
+        Args:
+            data (ndarray): The data values to convert to colors.
+            colormap (str or Colormap, optional): The name of the colormap to use for color mapping.
+                If not provided, the default colormap will be used.
+            clims (tuple, optional): Custom color limits for data normalization.
+                If not provided, the minimum and maximum non-excluded data values will be used.
+            vlims (tuple, optional): Exclusion limits for data values.
+                Values outside this range will be excluded from the color mapping.
+                If invert is True, values inside this range will be excluded.
+            invert (bool, optional): If True, the exclusion criteria will be inverted.
+            opacity (float, optional): Opacity value for the generated colors (0 to 1).
+            exclusion_color (tuple, optional): RGBA color for excluded data points.
+            scale (str, optional): Scale option for data normalization. Supported values are 'log' or None.
+                If 'log', data will be log-scaled (log2(1 + data)) before normalization.
+            dscalar_index (int, optional): If the data represents a dscalar file, the index of the dscalar map.
+
+        Returns:
+            ndarray: An array of RGBA colors representing the input data.
+
+        Example:
+            data = np.array([0.5, 0.8, 0.2, 1.0, np.nan, 0.3, -0.1, np.inf, -np.inf])
+            colors = my_brain_viewer.data_to_colors(
+                data,
+                colormap="viridis",
+                clims=(-1.0, 1.0),
+                vlims=(0.1, 0.9),
+                invert=False,
+                opacity=0.8,
+                exclusion_color=(0.5, 0.5, 0.5, 1.0),
+            )
+        """
         # initialization
         if colormap is None:
             colormap = self.default_colormap
@@ -737,6 +1077,25 @@ class Cerebro_brain_viewer:
         return colors
 
     def compute_overlay_colors(self, bottom_colors, top_colors):
+        """Compute overlay colors by combining two sets of colors.
+
+        The function takes two sets of colors with alpha transparency and computes the
+        resulting overlay colors by blending the top colors over the bottom colors.
+
+        Args:
+            bottom_colors (ndarray): An array of colors with alpha transparency, shape (N, 4),
+                                    representing the bottom layer.
+            top_colors (ndarray): An array of colors with alpha transparency, shape (N, 4),
+                                representing the top layer.
+
+        Returns:
+            ndarray: An array of blended overlay colors with alpha transparency, shape (N, 4).
+
+        Example:
+            bottom_colors = np.array([[0.7, 0.3, 0.2, 0.8], [0.5, 0.2, 0.9, 0.7]])
+            top_colors = np.array([[0.9, 0.1, 0.3, 0.6], [0.3, 0.6, 0.1, 0.4]])
+            overlay_colors = my_brain_viewer.compute_overlay_colors(bottom_colors, top_colors)
+        """
         # convert to 0-1 range
         overlay_colors = bottom_colors * 0
 
@@ -767,6 +1126,45 @@ class Cerebro_brain_viewer:
         dscalar_index=0,
         **kwargs,
     ):
+        """Add a CIFTI dscalar layer to the specified CIFTI space.
+
+        This function allows you to add a new dscalar layer to an existing CIFTI space.
+        You can provide the dscalar data directly, or load it from a file (either in NIfTI
+        format or using a loaded nibabel CIFTI object). The data will be converted to colors
+        using the data_to_colors method before adding the layer.
+
+        Args:
+            cifti_space_id (str, optional): The ID of the CIFTI space to which the layer
+                will be added. If not provided, the default loaded CIFTI space will be used.
+            dscalar_file (str, optional): The path to the dscalar file from which the data
+                will be loaded. Required if 'loaded_dscalar' and 'dscalar_data' are not provided.
+            loaded_dscalar (nibabel.Cifti2Image, optional): A loaded nibabel CIFTI object
+                containing the dscalar data. Required if 'dscalar_file' and 'dscalar_data'
+                are not provided.
+            dscalar_data (ndarray, optional): The data array for the dscalar layer. Required
+                if 'dscalar_file' and 'loaded_dscalar' are not provided.
+            dscalar_index (int, optional): The index of the dscalar data if the file or object
+                contains multiple datasets. Default is 0.
+            **kwargs: Additional keyword arguments that will be passed to the data_to_colors
+                method for converting the dscalar data to colors.
+
+        Returns:
+            dict: A dictionary containing information about the created CIFTI dscalar layer.
+
+        Raises:
+            Exception: If no dscalar data is provided.
+
+        Example:
+            dscalar_data = np.random.rand(100)
+            cifti_space_id = "cifti_space#unique_id"
+            dscalar_layer = my_brain_viewer.add_cifti_dscalar_layer(
+                cifti_space_id,
+                dscalar_data=dscalar_data,
+                colormap="coolwarm",
+                clims=(0, 1),
+                opacity=0.7,
+            )
+        """
         if cifti_space_id is None:
             # use default loaded cifti space
             cifti_space_id = self.default_objects["cifti_space"]
@@ -840,6 +1238,17 @@ class Cerebro_brain_viewer:
     #     return created_layer
 
     def update_cifti_dscalar_layer(self, layer_id):
+        """Update a CIFTI dscalar layer in the brain visualization.
+
+        This function updates a CIFTI dscalar layer by adding it to the corresponding CIFTI space object.
+        It sets the necessary flags to trigger the render update for the objects associated with the layer.
+
+        Args:
+            layer_id (str): The unique identifier of the CIFTI dscalar layer to be updated.
+
+        Returns:
+            None.
+        """
         cifti_space_id = self.created_layers[layer_id]["cifti_space_id"]
         cifti_space = self.created_objects[cifti_space_id]
         layer_idx = len(cifti_space["layers"])
@@ -852,15 +1261,53 @@ class Cerebro_brain_viewer:
         self.created_layers[layer_id]["layer_update_required"] = False
 
     def update_layer(self, layer_id):
+        """Update a layer of the brain visualization.
+
+        This function checks the type of the specified layer and updates it accordingly. Currently, it supports
+        updating "cifti_dscalar_layer" type layers. It retrieves the necessary data and calls the appropriate
+        function to perform the update.
+
+        Args:
+            layer_id (str): The unique identifier of the layer to be updated.
+
+        Returns:
+            None.
+        """
         if self.created_layers[layer_id]["layer_type"] == "cifti_dscalar_layer":
             self.update_cifti_dscalar_layer(layer_id)
 
     def update_layers(self):
+        """Update all layers in the brain visualization.
+
+        This function iterates through all the layers in the brain visualization and checks if an update is required for each layer.
+        If a layer requires an update, it calls the 'update_layer' function to perform the update for that specific layer.
+
+        Returns:
+            None
+        """
         for layer_id in self.created_layers:
             if self.created_layers[layer_id]["layer_update_required"]:
                 self.update_layer(layer_id)
 
     def get_object_base_colors_for_render(self, object_id, size):
+        """Get the base colors for rendering an object in the brain visualization.
+
+        This function retrieves the base colors for a specific object identified by 'object_id' in the brain visualization.
+        It loads the object's color information from the internal data structure.
+        The base colors are reshaped if necessary to ensure they have the appropriate shape for rendering.
+        If the object has a single base color, it is expanded to a fixed color for all elements with the specified 'size'.
+        The final base colors are returned as an array.
+
+        Args:
+            object_id (str): The unique identifier of the object for which to obtain base colors.
+            size (int): The size of the object, used for rendering.
+
+        Returns:
+            ndarray: An array containing the base colors for rendering the object.
+
+        Raises:
+            AssertionError: If the provided base colors cannot be unpacked appropriately.
+        """
         # load the object
         colored_object = self.created_objects[object_id]
 
@@ -883,6 +1330,22 @@ class Cerebro_brain_viewer:
         return base_color
 
     def apply_layer_colors_for_render(self, object_id, size, colors):
+        """Apply layer colors to the rendering colors of an object in the brain visualization.
+
+        This function applies layer colors to the rendering colors of a specific object identified by 'object_id' in the brain visualization.
+        It loads the object's color and layer information from the internal data structure.
+        For each layer associated with the object, it extracts the colors from the layer and assigns them to the corresponding indices in the object's rendering colors.
+        The function also considers the data mapping and indices specified in the object's data, if applicable.
+        Finally, it computes the overlay of layer colors and returns the updated rendering colors.
+
+        Args:
+            object_id (str): The unique identifier of the object for which to apply layer colors.
+            size (int): The size of the object, used for rendering.
+            colors (ndarray): The base rendering colors of the object.
+
+        Returns:
+            ndarray: An array containing the updated rendering colors with applied layer colors.
+        """
         # load the object
         colored_object = self.created_objects[object_id]
 
@@ -917,11 +1380,40 @@ class Cerebro_brain_viewer:
         return colors
 
     def get_object_render_colors(self, object_id, size):
+        """Get the rendering colors for an object in the brain visualization.
+
+        This function retrieves the rendering colors for a specific object identified by 'object_id' in the brain visualization.
+        It first obtains the base colors for the object using 'get_object_base_colors_for_render' function.
+        Then, it applies layer colors to the base colors using 'apply_layer_colors_for_render' function, if applicable.
+        The resulting colors are returned as an array.
+
+        Args:
+            object_id (str): The unique identifier of the object for which to obtain rendering colors.
+            size (int): The size of the object, used for rendering.
+
+        Returns:
+            ndarray: An array containing the rendering colors for the object.
+        """
         colors = self.get_object_base_colors_for_render(object_id, size)
         colors = self.apply_layer_colors_for_render(object_id, size, colors)
         return colors
 
     def render_surface_mesh(self, object_id):
+        """Render a surface mesh object in the brain visualization.
+
+        This function renders a surface mesh object identified by 'object_id' in the brain visualization.
+        It loads the vertices and triangles data of the surface mesh from the internal data structure.
+        The function applies any necessary changes in coordinates by considering the object's offset.
+        The appropriate render colors for the mesh are obtained using the 'get_object_render_colors' function.
+        The existing render, if any, is cleared, and the object is rendered using the calculated vertex colors.
+        The object's rendered state and boundaries are updated accordingly.
+
+        Args:
+            object_id (str): The unique identifier of the surface mesh object to be rendered.
+
+        Returns:
+            None.
+        """
         # load vertices and triangles
         surface_mesh_object = self.created_objects[object_id]
         surface_vertices = surface_mesh_object["vertices"]
@@ -959,6 +1451,21 @@ class Cerebro_brain_viewer:
         self.created_objects[object_id]["render_update_required"] = False
 
     def render_spheres(self, object_id):
+        """Render spheres in the brain visualization.
+
+        This function renders spheres identified by 'object_id' in the brain visualization.
+        It loads the coordinates and radii data of the spheres from the internal data structure.
+        The function applies any necessary changes in coordinates by considering the object's offset.
+        The appropriate render colors for the spheres are obtained using the 'get_object_render_colors' function.
+        The existing render, if any, is cleared, and the spheres are rendered using the calculated colors.
+        The object's rendered state and boundaries are updated accordingly.
+
+        Args:
+            object_id (str): The unique identifier of the spheres object to be rendered.
+
+        Returns:
+            None.
+        """
         # load vertices and triangles
         spheres_object = self.created_objects[object_id]
         coordinates = spheres_object["coordinates"]
@@ -990,6 +1497,21 @@ class Cerebro_brain_viewer:
         self.created_objects[object_id]["render_update_required"] = False
 
     def render_cylinders(self, object_id):
+        """Render cylinders in the brain visualization.
+
+        This function renders cylinders identified by 'object_id' in the brain visualization.
+        It loads the coordinates and radii data of the cylinders from the internal data structure.
+        The function applies any necessary changes in coordinates by considering the object's offset.
+        The appropriate render colors for the cylinders are obtained using the 'get_object_render_colors' function.
+        The existing render, if any, is cleared, and the cylinders are rendered using the calculated colors.
+        The object's rendered state and boundaries are updated accordingly.
+
+        Args:
+            object_id (str): The unique identifier of the cylinders object to be rendered.
+
+        Returns:
+            None.
+        """
         # load vertices and triangles
         cylinders_object = self.created_objects[object_id]
         coordinates = cylinders_object["coordinates"]
@@ -1021,6 +1543,18 @@ class Cerebro_brain_viewer:
         self.created_objects[object_id]["render_update_required"] = False
 
     def render_object(self, object_id):
+        """Render a specific object in the brain visualization.
+
+        This function renders the object specified by 'object_id' in the brain visualization.
+        The type of the object (surface mesh, spheres, or cylinders) is determined from the object's metadata.
+        Depending on the object type, the corresponding 'render_*' function is called to perform the rendering.
+
+        Args:
+            object_id (str): The unique identifier of the object to be rendered.
+
+        Returns:
+            None.
+        """
         if self.created_objects[object_id]["object_type"] == "surface_mesh":
             self.render_surface_mesh(object_id)
         elif self.created_objects[object_id]["object_type"] == "spheres":
@@ -1028,8 +1562,21 @@ class Cerebro_brain_viewer:
         elif self.created_objects[object_id]["object_type"] == "cylinders":
             self.render_cylinders(object_id)
 
-
     def render_update(self):
+        """Update the rendered objects in the brain visualization.
+
+        This function iterates through all created objects and checks if their rendering needs to be updated
+        based on the 'render_update_required' flag in their metadata. If an object requires rendering update,
+        the corresponding 'render_object' function is called to re-render the object with any changes.
+        After updating all objects, the camera is centered to ensure they are visible within the view,
+        and a garbage collection is performed to release any unused resources.
+
+        Args:
+            None.
+
+        Returns:
+            None.
+        """
         for object_id in self.created_objects:
             if self.created_objects[object_id].get("render_update_required", False):
                 self.render_object(object_id)
@@ -1037,6 +1584,20 @@ class Cerebro_brain_viewer:
         utils.garbage_collect()
 
     def draw(self):
+        """Draw the brain visualization.
+
+        This function is responsible for updating any required renders by calling 'update_layers' and 'render_update'
+        functions. The 'update_layers' function checks and updates individual layers of the visualization, and the
+        'render_update' function updates the rendered objects based on the 'render_update_required' flag in their metadata.
+        After updating the layers and rendered objects, the function calls the 'draw' method of the viewer window to display
+        the visualization interactively.
+
+        Args:
+            None.
+
+        Returns:
+            None.
+        """
         # update any required renders
         self.update_layers()
         self.render_update()
@@ -1045,6 +1606,19 @@ class Cerebro_brain_viewer:
         self.viewer.draw()
 
     def show(self):
+        """Show the brain visualization in an interactive window.
+
+        This function updates any required renders by calling 'update_layers' and 'render_update' functions,
+        which ensures that the brain visualization is up to date with any changes made to its objects. After updating
+        the layers and rendered objects, the function calls the 'show' method of the viewer window, allowing the
+        brain visualization to be displayed interactively.
+
+        Args:
+            None.
+
+        Returns:
+            None.
+        """
         # update any required renders
         self.update_layers()
         self.render_update()
@@ -1055,10 +1629,14 @@ class Cerebro_brain_viewer:
     def offscreen_draw_to_matplotlib_axes(self, ax):
         """Draw an offscreen-rendered view to a matplotlib axes.
 
-        Note: this functionality is experimental and might not fully work depending on
+        This function allows the offscreen-rendered view from the viewer window to be drawn into a matplotlib
+        axes object. Note that this functionality is experimental and might not fully work depending on
         viewer configuration.
 
         Args:
-            ax (matplotlib.Axes): the axes into which the view will be drawn.
+            ax (matplotlib.Axes): The matplotlib axes into which the offscreen-rendered view will be drawn.
+
+        Returns:
+            None.
         """
         self.viewer.window.offscreen_draw_to_matplotlib_axes(ax)
