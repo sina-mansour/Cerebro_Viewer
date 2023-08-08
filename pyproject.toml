@@ -30,6 +30,7 @@ dependencies = [
 
 [project.urls]
 "Homepage" = "https://github.com/sina-mansour/Cerebro_Viewer"
+"Documentations" = "https://cerebro-viewer.readthedocs.io"
 "Bug Tracker" = "https://github.com/sina-mansour/Cerebro_Viewer/issues"
 
 [project.optional-dependencies]
