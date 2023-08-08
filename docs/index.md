@@ -3,19 +3,9 @@
 ```
 
 ```{toctree}
-:caption: General
-:name: general
 :hidden:
-:maxdepth: 2
-
 general/main
-```
-
-```{toctree}
-:caption: Tutorial
-:name: tutorial
-:hidden:
-:maxdepth: 2
-
 tutorial/surface
+notebook_examples/readme
+auto_examples/index
 ```

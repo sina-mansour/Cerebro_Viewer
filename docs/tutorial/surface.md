@@ -2,7 +2,7 @@
 
 To render a surface
 
-```{python}
+```python
 import matplotlib.pyplot as plt
 
 from cerebro import (
