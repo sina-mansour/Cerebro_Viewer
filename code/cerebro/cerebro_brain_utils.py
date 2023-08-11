@@ -24,6 +24,7 @@ import nibabel as nib
 from skimage import measure
 import trimesh as tm
 from scipy import spatial
+from typing import Callable
 
 from .cerebro_types import Voxel
 
@@ -111,7 +112,12 @@ class File_handler:
         # A data structure to keep loaded files for caching
         self.loaded_files = {}
 
-    def load_file(self, file_name, load_func, use_cache=True):
+    def load_file(
+        self,
+        file_name: str,
+        load_func: Callable[[str], object],
+        use_cache: bool = True
+    ):
         """Load a file using a specified loading function.
 
         This function loads a file using the provided loading function. It checks if the file has already been loaded and
@@ -143,6 +149,46 @@ class File_handler:
             loaded_file = load_func(file_name)
             self.loaded_files[file_key] = loaded_file
             return loaded_file
+
+class Volumetric_data:
+    """Volumetric data
+
+    This class contains the necessary I/O handlers and logical units to load
+    volumetric brain imaging data.
+
+    Parameters
+    ----------
+    data
+        The input file or loaded image.
+
+    Attributes
+    ----------
+    affine
+        The affine transform to convert voxels indices to coordinates.
+    data
+        An array containing the image data.
+    ndim
+        The number of dimensions of the image (3 for 3-dimensional data)
+    """
+    def __init__(self, data: str | nib.nifti1.Nifti1Image):
+        # Check if data requires loading
+        if (type(data) == str):
+            # Loading a NIfTI file
+            if (data[-4:] == ".nii"):
+                self.loaded_file = File_handler().load_file(data, nib.load)
+        else:
+            # Store the pre-loaded data
+            self.loaded_file = data
+
+        # Now that the data is loaded, create the required objects
+        if (type(self.loaded_file) == nib.nifti1.Nifti1Image):
+            # Convert to RAS orientation
+            self.loaded_file = nib.as_closest_canonical(self.loaded_file)
+
+            # Store affine and data
+            self.affine = self.loaded_file.affine
+            self.data = self.loaded_file.get_fdata()
+            self.ndim = self.loaded_file.ndim
 
 
 # Utility functions
