@@ -113,11 +113,11 @@ class Cerebro_brain_viewer:
         # Create a dictionary for created layers
         self.created_layers = {}
 
-        # Create a dictionary for loaded files
-        self.loaded_files = {}
-
         # Create a dictionary for loaded default objects
         self.default_objects = {}
+
+        # Create a file handler
+        self.file_handler = cbu.File_handler()
 
     def __del__(self):
         del self.viewer
@@ -260,11 +260,11 @@ class Cerebro_brain_viewer:
         object_type = "cortical_surface_model"
         object_id = f"{object_type}#{utils.generate_unique_id()}"
         # left cortical surface
-        left_vertices, left_triangles = self._load_file(
+        left_vertices, left_triangles = self.file_handler.load_file(
             left_surface_file, cbu.load_GIFTI_surface
         )
         # right cortical surface
-        right_vertices, right_triangles = self._load_file(
+        right_vertices, right_triangles = self.file_handler.load_file(
             right_surface_file, cbu.load_GIFTI_surface
         )
 
@@ -319,31 +319,6 @@ class Cerebro_brain_viewer:
 
         # return object to user
         return cortical_surface_model
-
-    def _load_file(self, file_name, load_func, use_cache=True):
-        """Load a file using a specified loading function.
-
-        This function loads a file using the provided loading function. It checks if the file has already been loaded and
-        returns the cached version if 'use_cache' is set to True. Otherwise, it loads the file using the loading function
-        and caches it for future use.
-
-        Args:
-            file_name (str): The name or path of the file to be loaded.
-            load_func (function): The loading function to be used for loading the file.
-            use_cache (bool, optional): Whether to use the cached version of the file if available. Defaults to True.
-
-        Returns:
-            Any: The loaded file data returned by the loading function.
-
-        Example:
-            data = my_brain_viewer._load_file(file_to_load, my_loading_function)
-        """
-        if use_cache and (file_name in self.loaded_files):
-            return self.loaded_files[file_name]
-        else:
-            loaded_file = load_func(file_name)
-            self.loaded_files[file_name] = loaded_file
-            return loaded_file
 
     def _prepare_color(self, color):
         """Prepare the color value to the appropriate format.
@@ -857,7 +832,7 @@ class Cerebro_brain_viewer:
             cifti_template_file = cbu.cifti_template_file
 
         # load the template cifti
-        cifti_template = self._load_file(cifti_template_file, nib.load)
+        cifti_template = self.file_handler.load_file(cifti_template_file, nib.load)
         brain_models = [x for x in cifti_template.header.get_index_map(1).brain_models]
         brain_structures = [x.brain_structure for x in brain_models]
 
@@ -1188,7 +1163,7 @@ class Cerebro_brain_viewer:
 
         # load the cifti dscalar file
         if dscalar_file is not None:
-            dscalar = self._load_file(dscalar_file, nib.load)
+            dscalar = self.file_handler.load_file(dscalar_file, nib.load)
             dscalar_data = dscalar.get_fdata()[dscalar_index]
         elif loaded_dscalar is not None:
             dscalar_data = loaded_dscalar.get_fdata()[dscalar_index]
@@ -1225,7 +1200,7 @@ class Cerebro_brain_viewer:
     # def modify_cifti_dscalar_layer(self, created_layer, dscalar_file=None, loaded_dscalar=None, dscalar_data=None, dscalar_index=0, **kwargs):
     #     # load the cifti dscalar file
     #     if dscalar_file is not None:
-    #         dscalar = self._load_file(dscalar_file, nib.load)
+    #         dscalar = self.file_handler.load_file(dscalar_file, nib.load)
     #         dscalar_data = dscalar.get_fdata()[dscalar_index]
     #     elif loaded_dscalar is not None:
     #         dscalar_data = loaded_dscalar.get_fdata()[dscalar_index]

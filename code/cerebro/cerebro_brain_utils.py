@@ -90,6 +90,51 @@ cifti_expansion_coeffs = {
 }
 
 
+# Utility classes for neuroimaging data
+
+class File_handler:
+    """File handler
+
+    This class contains logical units used to handle file I/O operations
+    """
+    def __init__(self):
+        # A data structure to keep loaded files for caching
+        self.loaded_files = {}
+
+    def load_file(self, file_name, load_func, use_cache=True):
+        """Load a file using a specified loading function.
+
+        This function loads a file using the provided loading function. It checks if the file has already been loaded and
+        returns the cached version if 'use_cache' is set to True. Otherwise, it loads the file using the loading function
+        and caches it for future use.
+
+        Args:
+            file_name (str): The name or path of the file to be loaded.
+            load_func (function): The loading function to be used for loading the file.
+            use_cache (bool, optional): Whether to use the cached version of the file if available. Defaults to True.
+
+        Returns:
+            Any: The loaded file data returned by the loading function.
+
+        Example:
+            data = my_brain_viewer._load_file(file_to_load, my_loading_function)
+        """
+        # Convert path to absolute
+        file_name = os.path.abspath(file_name)
+
+        # Create a unique identifier/key
+        file_key = (file_name, load_func.__module__, load_func.__name__)
+
+        # Check for cached file
+        if use_cache and (file_key in self.loaded_files):
+            return self.loaded_files[file_name]
+        # Otherwise load and cache the file
+        else:
+            loaded_file = load_func(file_name)
+            self.loaded_files[file_key] = loaded_file
+            return loaded_file
+
+
 # Utility functions
 
 
