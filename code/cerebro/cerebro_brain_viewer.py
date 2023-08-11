@@ -1046,6 +1046,12 @@ class Cerebro_brain_viewer:
             object_offset_coordinate=coordinate_offset,
         )
 
+        # draw to update visualization
+        self.draw()
+
+        # return object to user
+        return self.created_objects[object_id]
+
     def data_to_colors(
         self,
         data,
