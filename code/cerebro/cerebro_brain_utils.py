@@ -25,7 +25,12 @@ from skimage import measure
 import trimesh as tm
 from scipy import spatial
 
+# Type hint imports
+from typing import Callable
 from .cerebro_types import Voxel
+
+# suppress trivial nibabel warnings, see https://github.com/nipy/nibabel/issues/771
+nib.imageglobals.logger.setLevel(40)
 
 # Utility template files and directories
 
@@ -88,6 +93,122 @@ cifti_expansion_coeffs = {
     "CIFTI_STRUCTURE_THALAMUS_LEFT": (-0.45, 0.2, 0.0),
     "CIFTI_STRUCTURE_THALAMUS_RIGHT": (0.45, 0.2, 0.0),
 }
+
+
+# Utility classes for neuroimaging data
+
+class File_handler:
+    """File handler
+
+    This class contains logical units used to handle file I/O operations. The
+    file handler is intentionally made as a Singleton for efficient caching
+    and avoiding duplicates.
+    """
+    _instance = None
+
+    def __new__(cls):
+        # Only create a new instance if its the first time
+        if cls._instance is None:
+            cls._instance = super(File_handler, cls).__new__(cls)
+        return cls._instance
+
+    def __init__(self):
+        # A data structure to keep loaded files for caching
+        self.loaded_files = {}
+
+    def load_file(
+        self,
+        file_name: str,
+        load_func: Callable[[str], object],
+        use_cache: bool = True
+    ):
+        """Load a file using a specified loading function.
+
+        This function loads a file using the provided loading function. It checks if the file has already been loaded and
+        returns the cached version if 'use_cache' is set to True. Otherwise, it loads the file using the loading function
+        and caches it for future use.
+
+        Args:
+            file_name (str): The name or path of the file to be loaded.
+            load_func (function): The loading function to be used for loading the file.
+            use_cache (bool, optional): Whether to use the cached version of the file if available. Defaults to True.
+
+        Returns:
+            Any: The loaded file data returned by the loading function.
+
+        Example:
+            data = my_brain_viewer._load_file(file_to_load, my_loading_function)
+        """
+        # Convert path to absolute
+        file_name = os.path.abspath(file_name)
+
+        # Create a unique identifier/key
+        file_key = (file_name, load_func.__module__, load_func.__name__)
+
+        # Check for cached file
+        if use_cache and (file_key in self.loaded_files):
+            return self.loaded_files[file_key]
+        # Otherwise load and cache the file
+        else:
+            loaded_file = load_func(file_name)
+            self.loaded_files[file_key] = loaded_file
+            return loaded_file
+
+class Volumetric_data:
+    """Volumetric data
+
+    This class contains the necessary I/O handlers and logical units to load
+    volumetric brain imaging data.
+
+    Parameters
+    ----------
+    data
+        The input file or loaded image.
+
+    Attributes
+    ----------
+    affine
+        The affine transform to convert voxels indices to coordinates.
+    data
+        An array containing the image data.
+    ndim
+        The number of dimensions of the image (3 for 3-dimensional data)
+    """
+    def __init__(self, data: str | nib.Nifti1Image | Volumetric_data):
+        # Check if data requires loading
+        if (type(data) == str):
+            # Loading a NIfTI file
+            if ((data[-4:] == ".nii") or (data[-7:] == ".nii.gz")):
+                self.loaded_obj = File_handler().load_file(data, nib.load)
+            else:
+                raise ValueError(f"File type for '{data}' is not supported")
+        else:
+            # Store the pre-loaded data
+            self.loaded_obj = data
+
+        # Now that the data is loaded, create the required objects
+        if (type(self.loaded_obj) == nib.Nifti1Image):
+            # Convert to RAS orientation
+            self.loaded_obj = nib.as_closest_canonical(self.loaded_obj)
+
+            # Store affine, data, and ndim
+            self.affine = self.loaded_obj.affine
+            self.data = self.loaded_obj.get_fdata()
+            self.ndim = self.loaded_obj.ndim
+        # Create a copy of another Volumetric_data object
+        elif (type(self.loaded_obj) == Volumetric_data):
+            # Copy affine, data, and ndim
+            self.affine = self.loaded_obj.affine
+            self.data = self.loaded_obj.data
+            self.ndim = self.loaded_obj.ndim
+
+        # Destroy link to the loaded object
+        self.loaded_obj = None
+
+    def mask(self, threshold: float):
+        """Convert the data to a binary mask."""
+        self.data = self.data > threshold
+        return self
 
 
 # Utility functions
@@ -210,7 +331,11 @@ def generate_surface_marching_cube(
     voxels_ijk: NDArray,
     transformation_matrix: NDArray,
     smoothing: int | None = 200,
+    smoothing_filter: str = "taubin",
+    subdivide: bool = True,
     simplify: bool = False,
+    simplification_max_face_count: int = None,
+    gradient_direction = "descent"
 ):
     """Approximate a surface mesh representation of a volumetric structure.
 
@@ -224,35 +349,57 @@ def generate_surface_marching_cube(
         Matrix representing an affine transformation to apply to the generated vertices.
     smoothing
         Iterations of the smoothing algorithm to run, or None to skip smoothing.
+    smoothing_filter
+        Choice of smoothing algorithm ("taubin", "laplacian").
+    subdivide
+        Whether the mesh should be subdivided. This increases the quality of low-resolution
+        masks, but is better left off in higher resolution files.
     simplify
         If true, simplify the generated mesh with quadratic decimation.
+    simplification_max_face_count
+        The maximum number of faces used in the simplification.
+    gradient_direction
+        Determines the definition of outside boundaries for the marching cube. This can
+        be either "ascent" or "descent", may need manual adjustment.
     """
     I, J, K = np.meshgrid(*[range(x + 3) for x in voxels_ijk.max(0)], indexing="ij")
     D = I * 0
     for i in range(voxels_ijk.shape[0]):
         D[voxels_ijk[i, 0] + 1, voxels_ijk[i, 1] + 1, voxels_ijk[i, 2] + 1] = 1
     verts_ijk, faces, normals, values = measure.marching_cubes(
-        D, 0, allow_degenerate=False, gradient_direction="descent"
+        D, 0, allow_degenerate=False, gradient_direction=gradient_direction
     )
     verts_xyz = nib.affines.apply_affine(transformation_matrix, (verts_ijk - 1))
     tmesh = tm.Trimesh(vertices=verts_xyz, faces=faces)
 
     # smooth and remesh the generated marching cube surface
-    if smoothing:
-        # tm.smoothing.filter_taubin(tmesh, iterations=smoothing,)
+    if subdivide:
         new_vertices, new_faces = tm.remesh.subdivide(
             vertices=tmesh.vertices, faces=tmesh.faces
         )
         tmesh = tm.Trimesh(vertices=new_vertices, faces=new_faces)
-        tm.smoothing.filter_taubin(
-            tmesh,
-            iterations=smoothing,
-        )
+    if smoothing:
+        if smoothing_filter == "taubin":
+            tm.smoothing.filter_taubin(
+                tmesh,
+                iterations=smoothing,
+            )
+        if smoothing_filter == "laplacian":
+            tm.smoothing.filter_laplacian(
+                tmesh,
+                iterations=smoothing,
+            )
+        if smoothing_filter == "humphrey":
+            tm.smoothing.filter_humphrey(
+                tmesh,
+                iterations=smoothing,
+            )
 
     # reduce number of faces if needed
-    max_face_count = 1 * faces.shape[0]
-    if simplify and (tmesh.faces.shape[0] > max_face_count):
-        tmesh = tmesh.simplify_quadratic_decimation(face_count=max_face_count)
+    if simplification_max_face_count is None:
+        simplification_max_face_count = 1 * faces.shape[0]
+    if simplify and (tmesh.faces.shape[0] > simplification_max_face_count):
+        tmesh = tmesh.simplify_quadratic_decimation(face_count=simplification_max_face_count)
 
     return tmesh.vertices, tmesh.faces
 
