@@ -95,8 +95,18 @@ cifti_expansion_coeffs = {
 class File_handler:
     """File handler
 
-    This class contains logical units used to handle file I/O operations
+    This class contains logical units used to handle file I/O operations. The
+    file handler is intentionally made as a Singleton for efficient caching
+    and avoiding duplicates.
     """
+    _instance = None
+
+    def __new__(cls):
+        # Only create a new instance if its the first time
+        if cls._instance is None:
+            cls._instance = super(File_handler, cls).__new__(cls)
+        return cls._instance
+
     def __init__(self):
         # A data structure to keep loaded files for caching
         self.loaded_files = {}
@@ -127,7 +137,7 @@ class File_handler:
 
         # Check for cached file
         if use_cache and (file_key in self.loaded_files):
-            return self.loaded_files[file_name]
+            return self.loaded_files[file_key]
         # Otherwise load and cache the file
         else:
             loaded_file = load_func(file_name)
