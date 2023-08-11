@@ -27,6 +27,9 @@ from . import renderer
 from . import cerebro_utils as utils
 from . import cerebro_brain_utils as cbu
 
+# Type hint imports
+from typing import Dict, Any
+
 # suppress trivial nibabel warnings, see https://github.com/nipy/nibabel/issues/771
 nib.imageglobals.logger.setLevel(40)
 
@@ -546,6 +549,7 @@ class Cerebro_brain_viewer:
             radii (float, numpy.ndarray, optional): The radii of the spheres. Can be a single value or a 1D NumPy array (shape: N).
                 Default value is 1.
             coordinate_offset (float, optional): An offset to apply to the 'coordinates'. Default value is 0.
+                Note: the offset can be a list/vector of length 3 denoting a 3-dimensional offset (x, y, z)
             color (tuple or None, optional): The base color for the spheres. If None, a default color will be used.
                 Default value is None.
             **kwargs: Additional keyword arguments to customize the spheres object.
@@ -606,6 +610,7 @@ class Cerebro_brain_viewer:
             radii (float, numpy.ndarray, optional): The radii of the cylinders. Can be a single value or a 1D NumPy array (shape: N).
                 Default value is 1.
             coordinate_offset (float, optional): An offset to apply to the 'coordinates'. Default value is 0.
+                Note: the offset can be a list/vector of length 3 denoting a 3-dimensional offset (x, y, z)
             color (tuple or None, optional): The base color for the cylinders. If None, a default color will be used.
                 Default value is None.
             **kwargs: Additional keyword arguments to customize the cylinders object.
@@ -969,6 +974,77 @@ class Cerebro_brain_viewer:
 
         # return object to user
         return collection_object
+
+    def visualize_mask_surface(
+        self,
+        volumetric_mask: str | nib.Nifti1Image | Volumetric_data,
+        threshold: float = 0.5,
+        coordinate_offset: [float, float, float] | float =0,
+        color: [float, float, float, float]= None,
+        **kwargs: Dict[str, Any]
+    ):
+        """Visualize a CIFTI space combining cortical surface models and subcortical structures.
+
+        This function allows you to visualize a CIFTI space by combining cortical surface models and subcortical structures.
+        The cortical surface models are rendered as surface meshes, while the subcortical structures can be rendered either
+        as spheres or as a surface generated using the marching cube algorithm with optional smoothing.
+
+        Args:
+            volumetric_mask (str | object): The volumetric mask to be converted to a surface mesh.
+                You can provide either the file path, or a loaded mask.
+            threshold (float, optional): The threshold to create a binary mask if a nonbinary mask is provided.
+            coordinate_offset (float, optional): An offset to apply to the 'coordinates'. Default value is 0.
+                Note: the offset can be a list/vector of length 3 denoting a 3-dimensional offset (x, y, z)
+            color (tuple or None, optional): The base color for the spheres. If None, a default color will be used.
+                Default value is None.
+            **kwargs: Additional keyword arguments that can be passed to the visualization methods (e.g., smoothing parameters).
+
+        Returns:
+            dict: A dictionary representing the created surface mesh with the following keys:
+                - 'object_id' (str): The unique identifier of the surface mesh object.
+                - 'object_type' (str): The type of the object, set as 'surface_mesh'.
+                - 'vertices' (numpy.ndarray): The vertices of the surface mesh.
+                - 'triangles' (numpy.ndarray): The triangles (faces) of the surface mesh.
+                - 'base_color' (numpy.ndarray): The base color of the surface mesh as a NumPy array.
+                - 'layers' (dict): A dictionary to store additional layers associated with the object.
+                - 'visibility' (bool): A flag indicating whether the object is visible.
+                - 'render_update_required' (bool): A flag indicating if the object requires a render update.
+                - 'rendered' (bool): A flag indicating if the object has been rendered.
+
+        Example:
+            volumetric_mask = cbu.get_data_file(f"templates/standard/MNI152/MNI152_T1_2mm_brain.nii.gz")
+            mask_surface = my_brain_viewer.visualize_mask_surface(
+                volumetric_mask,
+                threshold = 4000,
+            )
+        """
+        # Load the volumetric mask
+        volumetric_mask = cbu.Volumetric_data(volumetric_mask)
+
+        # Ensure this is a mask
+        volumetric_mask = volumetric_mask.mask(threshold)
+
+        # Get the voxels inside mask
+        selected_voxels = np.array(np.where(volumetric_mask.data)).T
+
+        # use a marching cube algorithm with smoothing to generate a surface model
+        (
+            surface_vertices,
+            surface_triangles,
+        ) = cbu.generate_surface_marching_cube(
+            selected_voxels, volumetric_mask.affine, **kwargs
+        )
+
+        # generate a unique id for the object
+        unique_id = f"{utils.generate_unique_id()}"
+        object_id = f"surface_mesh#{unique_id}"
+        self.created_objects[object_id] = self._create_surface_mesh_object(
+            object_id=object_id,
+            vertices=surface_vertices,
+            triangles=surface_triangles,
+            color=self._prepare_color(color),
+            object_offset_coordinate=coordinate_offset,
+        )
 
     def data_to_colors(
         self,

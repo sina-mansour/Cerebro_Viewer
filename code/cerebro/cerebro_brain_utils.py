@@ -24,9 +24,13 @@ import nibabel as nib
 from skimage import measure
 import trimesh as tm
 from scipy import spatial
-from typing import Callable
 
+# Type hint imports
+from typing import Callable
 from .cerebro_types import Voxel
+
+# suppress trivial nibabel warnings, see https://github.com/nipy/nibabel/issues/771
+nib.imageglobals.logger.setLevel(40)
 
 # Utility template files and directories
 
@@ -170,25 +174,41 @@ class Volumetric_data:
     ndim
         The number of dimensions of the image (3 for 3-dimensional data)
     """
-    def __init__(self, data: str | nib.nifti1.Nifti1Image):
+    def __init__(self, data: str | nib.Nifti1Image | Volumetric_data):
         # Check if data requires loading
         if (type(data) == str):
             # Loading a NIfTI file
-            if (data[-4:] == ".nii"):
-                self.loaded_file = File_handler().load_file(data, nib.load)
+            if ((data[-4:] == ".nii") or (data[-7:] == ".nii.gz")):
+                self.loaded_obj = File_handler().load_file(data, nib.load)
+            else:
+                raise ValueError(f"File type for '{data}' is not supported")
         else:
             # Store the pre-loaded data
-            self.loaded_file = data
+            self.loaded_obj = data
 
         # Now that the data is loaded, create the required objects
-        if (type(self.loaded_file) == nib.nifti1.Nifti1Image):
+        if (type(self.loaded_obj) == nib.Nifti1Image):
             # Convert to RAS orientation
-            self.loaded_file = nib.as_closest_canonical(self.loaded_file)
+            self.loaded_obj = nib.as_closest_canonical(self.loaded_obj)
 
-            # Store affine and data
-            self.affine = self.loaded_file.affine
-            self.data = self.loaded_file.get_fdata()
-            self.ndim = self.loaded_file.ndim
+            # Store affine, data, and ndim
+            self.affine = self.loaded_obj.affine
+            self.data = self.loaded_obj.get_fdata()
+            self.ndim = self.loaded_obj.ndim
+        # Create a copy of another Volumetric_data object
+        elif (type(self.loaded_obj) == Volumetric_data):
+            # Copy affine, data, and ndim
+            self.affine = self.loaded_obj.affine
+            self.data = self.loaded_obj.data
+            self.ndim = self.loaded_obj.ndim
+
+        # Destroy link to the loaded object
+        self.loaded_obj = None
+
+    def mask(self, threshold: float):
+        """Convert the data to a binary mask."""
+        self.data = self.data > threshold
+        return self
 
 
 # Utility functions
@@ -311,7 +331,11 @@ def generate_surface_marching_cube(
     voxels_ijk: NDArray,
     transformation_matrix: NDArray,
     smoothing: int | None = 200,
+    smoothing_filter: str = "taubin",
+    subdivide: bool = True,
     simplify: bool = False,
+    simplification_max_face_count: int = None,
+    gradient_direction = "descent"
 ):
     """Approximate a surface mesh representation of a volumetric structure.
 
@@ -325,35 +349,57 @@ def generate_surface_marching_cube(
         Matrix representing an affine transformation to apply to the generated vertices.
     smoothing
         Iterations of the smoothing algorithm to run, or None to skip smoothing.
+    smoothing_filter
+        Choice of smoothing algorithm ("taubin", "laplacian").
+    subdivide
+        Whether the mesh should be subdivided. This increases the quality of low-resolution
+        masks, but is better left off in higher resolution files.
     simplify
         If true, simplify the generated mesh with quadratic decimation.
+    simplification_max_face_count
+        The maximum number of faces used in the simplification.
+    gradient_direction
+        Determines the definition of outside boundaries for the marching cube. This can
+        be either "ascent" or "descent", may need manual adjustment.
     """
     I, J, K = np.meshgrid(*[range(x + 3) for x in voxels_ijk.max(0)], indexing="ij")
     D = I * 0
     for i in range(voxels_ijk.shape[0]):
         D[voxels_ijk[i, 0] + 1, voxels_ijk[i, 1] + 1, voxels_ijk[i, 2] + 1] = 1
     verts_ijk, faces, normals, values = measure.marching_cubes(
-        D, 0, allow_degenerate=False, gradient_direction="descent"
+        D, 0, allow_degenerate=False, gradient_direction=gradient_direction
     )
     verts_xyz = nib.affines.apply_affine(transformation_matrix, (verts_ijk - 1))
     tmesh = tm.Trimesh(vertices=verts_xyz, faces=faces)
 
     # smooth and remesh the generated marching cube surface
-    if smoothing:
-        # tm.smoothing.filter_taubin(tmesh, iterations=smoothing,)
+    if subdivide:
         new_vertices, new_faces = tm.remesh.subdivide(
             vertices=tmesh.vertices, faces=tmesh.faces
         )
         tmesh = tm.Trimesh(vertices=new_vertices, faces=new_faces)
-        tm.smoothing.filter_taubin(
-            tmesh,
-            iterations=smoothing,
-        )
+    if smoothing:
+        if smoothing_filter == "taubin":
+            tm.smoothing.filter_taubin(
+                tmesh,
+                iterations=smoothing,
+            )
+        if smoothing_filter == "laplacian":
+            tm.smoothing.filter_laplacian(
+                tmesh,
+                iterations=smoothing,
+            )
+        if smoothing_filter == "humphrey":
+            tm.smoothing.filter_humphrey(
+                tmesh,
+                iterations=smoothing,
+            )
 
     # reduce number of faces if needed
-    max_face_count = 1 * faces.shape[0]
-    if simplify and (tmesh.faces.shape[0] > max_face_count):
-        tmesh = tmesh.simplify_quadratic_decimation(face_count=max_face_count)
+    if simplification_max_face_count is None:
+        simplification_max_face_count = 1 * faces.shape[0]
+    if simplify and (tmesh.faces.shape[0] > simplification_max_face_count):
+        tmesh = tmesh.simplify_quadratic_decimation(face_count=simplification_max_face_count)
 
     return tmesh.vertices, tmesh.faces
 
